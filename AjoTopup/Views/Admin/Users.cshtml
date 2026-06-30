@@ -1,0 +1,347 @@
+@{
+    ViewBag.Title = "Kelola Pengguna";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var users = ViewBag.Users as List<Dictionary<string, object>>;
+}
+
+<div class="row">
+    <div class="col-12 mb-4 d-flex align-items-center justify-content-between">
+        <div>
+            <h2 class="font-weight-700">Kelola Pengguna</h2>
+            <p class="text-secondary">Kelola data hak akses pengguna (Admin, Operator, Manager) portal AjoTopup.</p>
+        </div>
+        <button type="button" class="btn btn-ajo-primary" data-toggle="modal" data-target="#createUserModal">
+            <i class="fas fa-user-plus mr-1"></i> Tambah Pengguna
+        </button>
+    </div>
+</div>
+
+<div class="ajo-card">
+    <div class="ajo-card-header">
+        <h5 class="font-weight-700 mb-0"><i class="fas fa-users mr-2 text-primary"></i>Daftar Pengguna</h5>
+    </div>
+
+    @if (users != null && users.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="ajo-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Nama Lengkap</th>
+                        <th>Email</th>
+                        <th>No Telepon</th>
+                        <th>Hak Akses (Role)</th>
+                        <th>Last Login</th>
+                        <th>Status</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        var id = Convert.ToInt32(user["Id"]);
+                        var username = user["Username"].ToString();
+                        var fullName = user["FullName"].ToString();
+                        var email = user["Email"] != DBNull.Value ? user["Email"].ToString() : "-";
+                        var phone = user["PhoneNumber"] != DBNull.Value ? user["PhoneNumber"].ToString() : "-";
+                        var roleName = user["RoleName"].ToString();
+                        var isActive = Convert.ToBoolean(user["IsActive"]);
+                        var lastLogin = user["LastLoginDate"] != DBNull.Value ? Convert.ToDateTime(user["LastLoginDate"]).ToString("dd-MMM-yyyy HH:mm") : "Belum pernah";
+
+                        var badgeClass = isActive ? "badge-ajo-success" : "badge-ajo-critical";
+                        var statusText = isActive ? "AKTIF" : "NONAKTIF";
+
+                        <tr>
+                            <td class="font-weight-700">@username</td>
+                            <td class="font-weight-500">@fullName</td>
+                            <td>@email</td>
+                            <td>@phone</td>
+                            <td>
+                                @if (roleName == "Admin")
+                                {
+                                    <span class="badge badge-primary rounded-pill px-3 py-1 font-weight-700">@roleName</span>
+                                }
+                                else if (roleName == "Manager")
+                                {
+                                    <span class="badge badge-info rounded-pill px-3 py-1 font-weight-700">@roleName</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-secondary rounded-pill px-3 py-1 font-weight-700">@roleName</span>
+                                }
+                            </td>
+                            <td class="small text-secondary">@lastLogin</td>
+                            <td>
+                                <span class="badge-ajo @badgeClass" id="badge-@id">@statusText</span>
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-ajo-secondary mr-2 btn-edit" 
+                                        data-id="@id" 
+                                        data-fullname="@fullName" 
+                                        data-email="@email" 
+                                        data-phone="@phone" 
+                                        data-rolename="@roleName"
+                                        data-active="@(isActive ? "true" : "false")"
+                                        style="padding: 4px 14px; font-size: 11px;">
+                                    <i class="far fa-edit"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-sm btn-ajo-ghost btn-toggle" data-id="@id" style="padding: 4px 14px; font-size: 11px;">
+                                    <i class="fas fa-toggle-on"></i> Ubah Status
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-users-cog mb-3" style="font-size: 32px;"></i>
+            <p class="mb-0">Belum ada pengguna terdaftar.</p>
+        </div>
+    }
+</div>
+
+<!-- Modal: Create User -->
+<div class="modal fade" id="createUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <div class="modal-header border-bottom-0 p-4 pb-2">
+                <h5 class="font-weight-700 mb-0">Tambah Pengguna Baru</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <form id="frmCreateUser">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">USERNAME</label>
+                        <input type="text" id="addUsername" class="form-control ajo-input" placeholder="Masukkan username unik" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">NAMA LENGKAP</label>
+                        <input type="text" id="addFullName" class="form-control ajo-input" placeholder="Masukkan nama lengkap" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">EMAIL (OPSIONAL)</label>
+                        <input type="email" id="addEmail" class="form-control ajo-input" placeholder="contoh@mail.com" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">NO TELEPON (OPSIONAL)</label>
+                        <input type="text" id="addPhone" class="form-control ajo-input" placeholder="08xxxxxxxx" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">PASSWORD</label>
+                        <input type="password" id="addPassword" class="form-control ajo-input" placeholder="Masukkan password" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">HAK AKSES (ROLE)</label>
+                        <select id="addRole" class="form-control ajo-input" required>
+                            <option value="Operator">Operator</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Manager">Manager</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 p-4 pt-0">
+                <button type="button" class="btn btn-ajo-secondary mr-2" data-dismiss="modal" style="font-size: 13px;">Batal</button>
+                <button type="button" id="btnSaveUser" class="btn btn-ajo-primary" style="font-size: 13px;">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit User -->
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <div class="modal-header border-bottom-0 p-4 pb-2">
+                <h5 class="font-weight-700 mb-0">Ubah Data Pengguna</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <input type="hidden" id="editUserId" />
+                <form id="frmEditUser">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">NAMA LENGKAP</label>
+                        <input type="text" id="editFullName" class="form-control ajo-input" required />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">EMAIL</label>
+                        <input type="email" id="editEmail" class="form-control ajo-input" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">NO TELEPON</label>
+                        <input type="text" id="editPhone" class="form-control ajo-input" />
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary" style="font-size: 11px;">HAK AKSES (ROLE)</label>
+                        <select id="editRole" class="form-control ajo-input" required>
+                            <option value="Operator">Operator</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Manager">Manager</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="font-weight-700 text-secondary d-block" style="font-size: 11px;">STATUS AKTIF</label>
+                        <div class="custom-control custom-switch mt-2">
+                            <input type="checkbox" class="custom-control-input" id="editActive">
+                            <label class="custom-control-label font-weight-500 text-secondary" for="editActive">Dapat login ke sistem</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 p-4 pt-0">
+                <button type="button" class="btn btn-ajo-secondary mr-2" data-dismiss="modal" style="font-size: 13px;">Batal</button>
+                <button type="button" id="btnUpdateUser" class="btn btn-ajo-primary" style="font-size: 13px;">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section jsContent {
+    <script>
+        $(document).ready(function () {
+            // Save User
+            $('#btnSaveUser').click(function () {
+                var username = $('#addUsername').val().trim();
+                var fullname = $('#addFullName').val().trim();
+                var email = $('#addEmail').val().trim();
+                var phone = $('#addPhone').val().trim();
+                var password = $('#addPassword').val();
+                var role = $('#addRole').val();
+
+                if (!username || !fullname || !password || !role) {
+                    alert("Mohon lengkapi semua kolom wajib.");
+                    return;
+                }
+
+                $('#btnSaveUser').prop('disabled', true).text('Menyimpan...');
+
+                $.ajax({
+                    url: '@Url.Action("CreateUser", "Admin")',
+                    type: 'POST',
+                    data: {
+                        username: username,
+                        fullName: fullname,
+                        email: email,
+                        phoneNumber: phone,
+                        password: password,
+                        roleName: role
+                    },
+                    success: function (res) {
+                        $('#btnSaveUser').prop('disabled', false).text('Simpan');
+                        if (res.success) {
+                            alert(res.message);
+                            location.reload();
+                        } else {
+                            alert("Gagal: " + res.message);
+                        }
+                    },
+                    error: function () {
+                        $('#btnSaveUser').prop('disabled', false).text('Simpan');
+                        alert("Terjadi kesalahan sistem.");
+                    }
+                });
+            });
+
+            // Trigger Edit Modal
+            $('.btn-edit').click(function () {
+                var btn = $(this);
+                $('#editUserId').val(btn.data('id'));
+                $('#editFullName').val(btn.data('fullname'));
+                
+                var email = btn.data('email');
+                $('#editEmail').val(email === "-" ? "" : email);
+                
+                var phone = btn.data('phone');
+                $('#editPhone').val(phone === "-" ? "" : phone);
+                
+                $('#editRole').val(btn.data('rolename'));
+                $('#editActive').prop('checked', btn.data('active') === true);
+
+                $('#editUserModal').modal('show');
+            });
+
+            // Save Update
+            $('#btnUpdateUser').click(function () {
+                var id = $('#editUserId').val();
+                var fullname = $('#editFullName').val().trim();
+                var email = $('#editEmail').val().trim();
+                var phone = $('#editPhone').val().trim();
+                var role = $('#editRole').val();
+                var active = $('#editActive').is(':checked');
+
+                if (!fullname || !role) {
+                    alert("Nama Lengkap dan Role harus diisi.");
+                    return;
+                }
+
+                $('#btnUpdateUser').prop('disabled', true).text('Menyimpan...');
+
+                $.ajax({
+                    url: '@Url.Action("EditUser", "Admin")',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        fullName: fullname,
+                        email: email,
+                        phoneNumber: phone,
+                        roleName: role,
+                        isActive: active
+                    },
+                    success: function (res) {
+                        $('#btnUpdateUser').prop('disabled', false).text('Simpan Perubahan');
+                        if (res.success) {
+                            alert(res.message);
+                            location.reload();
+                        } else {
+                            alert("Gagal: " + res.message);
+                        }
+                    },
+                    error: function () {
+                        $('#btnUpdateUser').prop('disabled', false).text('Simpan Perubahan');
+                        alert("Terjadi kesalahan sistem.");
+                    }
+                });
+            });
+
+            // Toggle active status in table
+            $('.btn-toggle').click(function () {
+                var btn = $(this);
+                var id = btn.data('id');
+                btn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("ToggleUserStatus", "Admin")',
+                    type: 'POST',
+                    data: { id: id },
+                    success: function (res) {
+                        btn.prop('disabled', false);
+                        if (res.success) {
+                            var badge = $('#badge-' + id);
+                            if (res.newStatus) {
+                                badge.text("AKTIF").removeClass("badge-ajo-critical").addClass("badge-ajo-success");
+                            } else {
+                                badge.text("NONAKTIF").removeClass("badge-ajo-success").addClass("badge-ajo-critical");
+                            }
+                        } else {
+                            alert("Gagal: " + res.message);
+                        }
+                    },
+                    error: function () {
+                        btn.prop('disabled', false);
+                        alert("Terjadi kesalahan sistem.");
+                    }
+                });
+            });
+        });
+    </script>
+}
+

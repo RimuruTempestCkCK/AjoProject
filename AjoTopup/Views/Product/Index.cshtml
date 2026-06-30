@@ -1,0 +1,113 @@
+@{
+    ViewBag.Title = "Master Produk";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var products = ViewBag.Products as List<Dictionary<string, object>>;
+}
+
+<div class="row">
+    <div class="col-12 mb-4 d-flex align-items-center justify-content-between">
+        <div>
+            <h2 class="font-weight-700">Master Produk</h2>
+            <p class="text-secondary">Kelola daftar produk pulsa telekomunikasi yang aktif di sistem gateway AjoTopup.</p>
+        </div>
+        <a href="@Url.Content("~/product/create")" class="btn btn-ajo-primary">
+            <i class="fas fa-plus mr-1"></i> Tambah Produk
+        </a>
+    </div>
+</div>
+
+<div class="ajo-card">
+    <div class="ajo-card-header">
+        <h5 class="font-weight-700 mb-0"><i class="fas fa-list mr-2 text-primary"></i>Daftar Produk</h5>
+    </div>
+
+    @if (products != null && products.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="ajo-table">
+                <thead>
+                    <tr>
+                        <th>Kode Produk</th>
+                        <th>Nama Produk</th>
+                        <th>Provider</th>
+                        <th>Harga (Price)</th>
+                        <th>Komisi Agen</th>
+                        <th>Status</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var prod in products)
+                    {
+                        var isActive = Convert.ToBoolean(prod["IsActive"]);
+                        var badgeClass = isActive ? "badge-ajo-success" : "badge-ajo-critical";
+                        var statusText = isActive ? "AKTIF" : "NONAKTIF";
+
+                        <tr>
+                            <td class="font-weight-700 text-primary">@prod["ProductCode"]</td>
+                            <td class="font-weight-500">@prod["ProductName"]</td>
+                            <td>@prod["Provider"]</td>
+                            <td>Rp @Convert.ToDecimal(prod["Price"]).ToString("N0")</td>
+                            <td class="text-success">Rp @Convert.ToDecimal(prod["Commission"] != DBNull.Value ? prod["Commission"] : 0).ToString("N0")</td>
+                            <td>
+                                <span class="badge-ajo @badgeClass" id="badge-@prod["Id"]">@statusText</span>
+                            </td>
+                            <td class="text-center">
+                                <a href="@Url.Content("~/product/edit/")@prod["Id"]" class="btn btn-sm btn-ajo-secondary mr-2" style="padding: 4px 14px; font-size: 11px;">
+                                    <i class="far fa-edit"></i> Edit
+                                </a>
+                                <button type="button" class="btn btn-sm btn-ajo-ghost btn-toggle" data-id="@prod["Id"]" style="padding: 4px 14px; font-size: 11px;">
+                                    <i class="fas fa-toggle-on"></i> Ubah Status
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 text-secondary">
+            <i class="fas fa-tags mb-3" style="font-size: 32px;"></i>
+            <p class="mb-0">Belum ada produk pulsa terdaftar di database.</p>
+        </div>
+    }
+</div>
+
+@section jsContent {
+    <script>
+        $(document).ready(function () {
+            // Handle Toggle Status
+            $('.btn-toggle').click(function () {
+                var btn = $(this);
+                var id = btn.data('id');
+
+                btn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Content("~/product/ToggleStatus/")' + id,
+                    type: 'POST',
+                    success: function (res) {
+                        btn.prop('disabled', false);
+                        if (res.success) {
+                            var badge = $('#badge-' + id);
+                            if (res.newStatus) {
+                                badge.text("AKTIF").removeClass("badge-ajo-critical").addClass("badge-ajo-success");
+                            } else {
+                                badge.text("NONAKTIF").removeClass("badge-ajo-success").addClass("badge-ajo-critical");
+                            }
+                        } else {
+                            alert("Gagal mengubah status: " + res.message);
+                        }
+                    },
+                    error: function () {
+                        btn.prop('disabled', false);
+                        alert("Terjadi kesalahan koneksi sistem.");
+                    }
+                });
+            });
+        });
+    </script>
+}
+

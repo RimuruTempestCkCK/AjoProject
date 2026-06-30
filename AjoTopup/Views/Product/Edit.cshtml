@@ -1,0 +1,143 @@
+@{
+    ViewBag.Title = "Edit Produk";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var prod = ViewBag.Product as Dictionary<string, object>;
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="mb-4 d-flex align-items-center justify-content-between">
+            <div>
+                <h2 class="font-weight-700">Edit Produk</h2>
+                <p class="text-secondary">Ubah data produk pulsa telekomunikasi yang sudah terdaftar.</p>
+            </div>
+            <a href="@Url.Content("~/product")" class="btn btn-ajo-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Batal & Kembali
+            </a>
+        </div>
+
+        @if (prod != null)
+        {
+            var id = Convert.ToInt32(prod["Id"]);
+            var code = prod["ProductCode"].ToString();
+            var name = prod["ProductName"].ToString();
+            var provider = prod["Provider"].ToString();
+            var price = Convert.ToDecimal(prod["Price"]);
+            var commission = Convert.ToDecimal(prod["Commission"] != DBNull.Value ? prod["Commission"] : 0);
+            var isActive = Convert.ToBoolean(prod["IsActive"]);
+
+            <div class="ajo-card ajo-card-lg">
+                <div class="ajo-card-header">
+                    <h5 class="font-weight-700 mb-0"><i class="fas fa-edit mr-2 text-primary"></i>Data Produk - @code</h5>
+                </div>
+
+                <form id="frmEditProduct">
+                    <!-- Product Code (READ-ONLY) -->
+                    <div class="form-group mb-4">
+                        <label for="txtProductCode">KODE PRODUK (PRODUCT CODE)</label>
+                        <input type="text" id="txtProductCode" class="form-control ajo-input text-muted" value="@code" disabled style="background-color: var(--surface-soft);" />
+                        <small class="form-text text-secondary mt-1">Kode produk bersifat permanen dan tidak dapat diubah.</small>
+                    </div>
+
+                    <!-- Product Name -->
+                    <div class="form-group mb-4">
+                        <label for="txtProductName">NAMA PRODUK</label>
+                        <input type="text" id="txtProductName" class="form-control ajo-input" value="@name" placeholder="Contoh: Telkomsel 10.000" required />
+                    </div>
+
+                    <!-- Provider (READ-ONLY) -->
+                    <div class="form-group mb-4">
+                        <label for="txtProvider">PROVIDER</label>
+                        <input type="text" id="txtProvider" class="form-control ajo-input text-muted" value="@provider" disabled style="background-color: var(--surface-soft);" />
+                    </div>
+
+                    <!-- Price -->
+                    <div class="form-group mb-4">
+                        <label for="numPrice">HARGA PRODUK (PRICE)</label>
+                        <input type="number" id="numPrice" class="form-control ajo-input" min="1" value="@Convert.ToInt32(price)" placeholder="Contoh: 10000" required />
+                    </div>
+
+                    <!-- Commission -->
+                    <div class="form-group mb-4">
+                        <label for="numCommission">KOMISI AGEN</label>
+                        <input type="number" id="numCommission" class="form-control ajo-input" min="0" value="@Convert.ToInt32(commission)" placeholder="Contoh: 250" />
+                    </div>
+
+                    <!-- Is Active -->
+                    <div class="form-group mb-4">
+                        <label class="d-block">STATUS AKTIF</label>
+                        <div class="custom-control custom-switch mt-2">
+                            <input type="checkbox" class="custom-control-input" id="chkActive" @(isActive ? "checked" : "")>
+                            <label class="custom-control-label font-weight-500" for="chkActive">Aktifkan produk untuk transaksi pengisian pulsa</label>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="button" id="btnUpdate" class="btn btn-ajo-primary btn-block py-2">
+                        <i class="fas fa-check-circle mr-1"></i> Perbarui Produk
+                    </button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div class="ajo-card text-center py-4 text-danger">
+                <i class="fas fa-exclamation-triangle mb-2" style="font-size: 24px;"></i>
+                <p class="mb-0">Data produk tidak valid.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section jsContent {
+    <script>
+        $(document).ready(function () {
+            $('#btnUpdate').click(function () {
+                var id = '@(prod != null ? prod["Id"].ToString() : "0")';
+                var name = $('#txtProductName').val().trim();
+                var price = parseFloat($('#numPrice').val());
+                var commission = parseFloat($('#numCommission').val()) || 0;
+                var active = $('#chkActive').is(':checked');
+
+                if (!name) {
+                    alert("Silakan isi Nama Produk.");
+                    $('#txtProductName').focus();
+                    return;
+                }
+                if (isNaN(price) || price <= 0) {
+                    alert("Harga produk harus lebih dari 0.");
+                    $('#numPrice').focus();
+                    return;
+                }
+
+                $('#btnUpdate').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Memperbarui...');
+
+                $.ajax({
+                    url: '@Url.Action("Edit", "Product")',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        productName: name,
+                        price: price,
+                        commission: commission,
+                        isActive: active
+                    },
+                    success: function (res) {
+                        $('#btnUpdate').prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Perbarui Produk');
+                        if (res.success) {
+                            alert(res.message);
+                            window.location = '@Url.Content("~/product")';
+                        } else {
+                            alert("Gagal memperbarui: " + res.message);
+                        }
+                    },
+                    error: function () {
+                        $('#btnUpdate').prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Perbarui Produk');
+                        alert("Terjadi kesalahan sistem.");
+                    }
+                });
+            });
+        });
+    </script>
+}
+

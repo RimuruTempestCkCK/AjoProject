@@ -1,0 +1,224 @@
+@{
+    ViewBag.Title = "Detail Transaksi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var t = ViewBag.Trx as AjoTopup.Controllers.TransactionController.TransactionDetailData;
+    var logs = ViewBag.Logs as List<AjoTopup.Controllers.TransactionController.TransactionDetailLog>;
+}
+
+<div class="row">
+    <div class="col-12 mb-4 d-flex align-items-center justify-content-between">
+        <div>
+            <h2 class="font-weight-700">Detail Transaksi</h2>
+            <p class="text-secondary">Detail data lengkap transaksi dan log alur integrasi sistem gateway.</p>
+        </div>
+        <a href="@Url.Content("~/transaction/history")" class="btn btn-ajo-secondary">
+            <i class="fas fa-arrow-left mr-1"></i> Kembali ke Riwayat
+        </a>
+    </div>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="ajo-alert ajo-alert-danger">
+        <i class="fas fa-exclamation-circle mr-2"></i> @ViewBag.ErrorMessage
+    </div>
+}
+else if (t != null)
+{
+    var badgeClass = "badge-ajo-attention";
+    if (t.Status == "SUCCESS") { badgeClass = "badge-ajo-success"; }
+    else if (t.Status == "FAILED") { badgeClass = "badge-ajo-critical"; }
+
+    <div class="row">
+        <!-- Left: Transaction Info Cards -->
+        <div class="col-md-5">
+            <div class="ajo-card ajo-card-lg" style="position: relative; overflow: hidden;">
+                <!-- Corner marker indicator -->
+                @if (t.Status == "SUCCESS")
+                {
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background-color: var(--success);"></div>
+                }
+                else if (t.Status == "FAILED")
+                {
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background-color: var(--critical);"></div>
+                }
+                else
+                {
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background-color: var(--attention);"></div>
+                }
+
+                <div class="text-center mb-4">
+                    <h5 class="text-secondary font-weight-700 text-uppercase" style="font-size: 11px; letter-spacing: 0.8px;">Status Transaksi</h5>
+                    <span class="badge-ajo @badgeClass mt-1" style="font-size: 14px; padding: 6px 20px;">@t.Status</span>
+                </div>
+
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">ID Transaksi (TrxId):</span>
+                        <strong class="text-dark">@t.TrxId</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Kode Produk:</span>
+                        <strong class="text-dark">@t.ProductCode</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Nama Produk:</span>
+                        <strong class="text-dark">@t.ProductName</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Provider:</span>
+                        <strong class="text-dark">@t.Provider</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Nomor Tujuan:</span>
+                        <strong class="text-dark">@t.Destination</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Harga Pokok:</span>
+                        <strong class="text-dark">Rp @t.Amount.ToString("N0")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Komisi Agen:</span>
+                        <strong class="text-success">Rp @t.Commission.ToString("N0")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Tanggal Request:</span>
+                        <strong class="text-dark">@Convert.ToDateTime(t.RequestDate).ToString("dd-MMM-yyyy HH:mm:ss")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Tanggal Response:</span>
+                        <strong class="text-dark">@(t.ResponseDate != null ? Convert.ToDateTime(t.ResponseDate).ToString("dd-MMM-yyyy HH:mm:ss") : "-")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Waktu Proses:</span>
+                        <strong class="text-dark">@(t.ProcessingTime != null ? t.ProcessingTime.Value.ToString() + " ms" : "-")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Operator Input:</span>
+                        <strong class="text-dark">@t.CreatedBy</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Serial Number (SN):</span>
+                        <strong class="text-success" style="font-size: 15px;">@(t.SerialNumber ?? "-")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Pesan Gateway:</span>
+                        <strong class="text-dark">@(t.ProviderMessage ?? "-")</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Stepper Integration Logs -->
+        <div class="col-md-7">
+            <h4 class="font-weight-700 mb-3"><i class="fas fa-network-wired mr-2 text-primary"></i>Alur Integrasi & Payload Log</h4>
+            
+            @if (logs != null && logs.Count > 0)
+            {
+                int stepNum = 1;
+                foreach (var log in logs)
+                {
+                    string colorBar = "var(--primary)";
+                    string icon = "fa-exchange-alt";
+                    string title = log.LogType;
+
+                    if (log.LogType == "MVC_TO_API")
+                    {
+                        colorBar = "var(--fb-blue)";
+                        icon = "fa-laptop-code";
+                        title = "1. Kirim Transaksi (Web MVC ke Gateway API)";
+                    }
+                    else if (log.LogType == "API_TO_PROVIDER")
+                    {
+                        colorBar = "var(--attention)";
+                        icon = "fa-cloud-upload-alt";
+                        title = "2. Kirim ke Operator (API ke Provider Simulator)";
+                    }
+                    else if (log.LogType == "API_RESPONSE")
+                    {
+                        colorBar = "var(--success)";
+                        icon = "fa-cloud-download-alt";
+                        title = "3. Respons Operator (Provider ke Gateway API)";
+                    }
+
+                    <div class="ajo-card mb-3" style="border-left: 5px solid @colorBar; padding: 20px;">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="font-weight-700 mb-0 text-dark">
+                                <i class="fas @icon mr-2" style="color: @colorBar;"></i> @title
+                            </h6>
+                            <span class="text-muted" style="font-size: 11px;">@Convert.ToDateTime(log.CreatedDate).ToString("HH:mm:ss.fff")</span>
+                        </div>
+
+                        <div class="small mb-2 text-secondary">
+                            <strong>URL Request:</strong> <code>@(log.RequestUrl ?? "N/A")</code>
+                            @if (log.ResponseStatusCode != null)
+                            {
+                                <span class="ml-3"><strong>Status Code:</strong> <span class="badge badge-light">@log.ResponseStatusCode</span></span>
+                            }
+                            @if (log.ExecutionTime != null)
+                            {
+                                <span class="ml-3"><strong>Durasi:</strong> <span>@log.ExecutionTime ms</span></span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(log.RequestBody))
+                        {
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="font-weight-700 text-secondary" style="font-size: 11px;">REQUEST BODY (JSON)</span>
+                                    <button type="button" class="btn btn-link btn-sm text-secondary p-0 btn-copy" data-clipboard="@log.RequestBody">
+                                        <i class="far fa-copy"></i> Salin
+                                    </button>
+                                </div>
+                                <pre style="background-color: var(--surface-soft); color: var(--charcoal); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-bottom: 0;"><code>@log.RequestBody</code></pre>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(log.ResponseBody))
+                        {
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="font-weight-700 text-secondary" style="font-size: 11px;">RESPONSE BODY (JSON)</span>
+                                    <button type="button" class="btn btn-link btn-sm text-secondary p-0 btn-copy" data-clipboard="@log.ResponseBody">
+                                        <i class="far fa-copy"></i> Salin
+                                    </button>
+                                </div>
+                                <pre style="background-color: var(--surface-soft); color: var(--charcoal); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-bottom: 0;"><code>@log.ResponseBody</code></pre>
+                            </div>
+                        }
+                    </div>
+                    stepNum++;
+                }
+            }
+            else
+            {
+                <div class="ajo-card text-center py-4 text-secondary">
+                    <i class="fas fa-history mb-2" style="font-size: 24px;"></i>
+                    <p class="mb-0">Tidak ada data log payload untuk transaksi ini.</p>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section jsContent {
+    <script>
+        $(document).ready(function () {
+            // Setup simple copy to clipboard
+            $('.btn-copy').click(function () {
+                var text = $(this).attr('data-clipboard');
+                var button = $(this);
+                
+                navigator.clipboard.writeText(text).then(function() {
+                    button.html('<i class="fas fa-check"></i> Tersalin');
+                    setTimeout(function() {
+                        button.html('<i class="far fa-copy"></i> Salin');
+                    }, 2000);
+                }).catch(function() {
+                    alert("Gagal menyalin teks.");
+                });
+            });
+        });
+    </script>
+}
+

@@ -1,0 +1,236 @@
+@{
+    ViewBag.Title = "Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var topProducts = ViewBag.TopProducts as List<Dictionary<string, object>>;
+}
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2 class="font-weight-700">Ringkasan Hari Ini</h2>
+        <p class="text-secondary">Statistik performa transaksi AjoTopup Anda untuk hari ini.</p>
+    </div>
+</div>
+
+<!-- KPI Cards Grid -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="ajo-card ajo-card-lg text-center" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background-color: var(--ink-button);"></div>
+            <h5 class="text-uppercase text-secondary font-weight-700 mb-2" style="font-size: 11px; letter-spacing: 0.8px;">Total Transaksi</h5>
+            <h2 class="font-weight-700 mb-1" style="font-size: 32px; color: var(--ink-deep);">@ViewBag.TotalCount</h2>
+            <p class="text-secondary mb-0 font-weight-500">Rp @ViewBag.TotalAmount.ToString("N0")</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="ajo-card ajo-card-lg text-center" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background-color: var(--success);"></div>
+            <h5 class="text-uppercase text-success font-weight-700 mb-2" style="font-size: 11px; letter-spacing: 0.8px;">Transaksi Sukses</h5>
+            <h2 class="font-weight-700 text-success mb-1" style="font-size: 32px;">@ViewBag.SuccessCount</h2>
+            <p class="text-secondary mb-0 font-weight-500">@ViewBag.SuccessPercentage% dari total</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="ajo-card ajo-card-lg text-center" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background-color: var(--critical);"></div>
+            <h5 class="text-uppercase text-danger font-weight-700 mb-2" style="font-size: 11px; letter-spacing: 0.8px;">Transaksi Gagal</h5>
+            <h2 class="font-weight-700 text-danger mb-1" style="font-size: 32px;">@ViewBag.FailedCount</h2>
+            <p class="text-secondary mb-0 font-weight-500">@ViewBag.FailedPercentage% dari total</p>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="ajo-card ajo-card-lg text-center" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background-color: var(--attention);"></div>
+            <h5 class="text-uppercase text-warning font-weight-700 mb-2" style="font-size: 11px; letter-spacing: 0.8px;">Dalam Proses</h5>
+            <h2 class="font-weight-700 text-warning mb-1" style="font-size: 32px;">@ViewBag.PendingCount</h2>
+            <p class="text-secondary mb-0 font-weight-500">Menunggu respons provider</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chart: Hourly Transactions -->
+    <div class="col-lg-8">
+        <div class="ajo-card" style="height: 420px;">
+            <div class="ajo-card-header">
+                <h5 class="font-weight-700 mb-0">Tren Transaksi Per Jam</h5>
+                <span class="badge badge-ajo badge-ajo-success">Hari Ini</span>
+            </div>
+            <div style="height: 300px; position: relative;">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart: Success vs Failed -->
+    <div class="col-lg-4">
+        <div class="ajo-card" style="height: 420px;">
+            <div class="ajo-card-header">
+                <h5 class="font-weight-700 mb-0">Rasio Sukses/Gagal</h5>
+            </div>
+            <div style="height: 250px; position: relative; margin-top: 20px;">
+                <canvas id="ratioChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table: Top 5 Products -->
+<div class="row">
+    <div class="col-12">
+        <div class="ajo-card">
+            <div class="ajo-card-header">
+                <h5 class="font-weight-700 mb-0">Top 5 Produk Terlaris</h5>
+                <i class="fas fa-crown text-warning"></i>
+            </div>
+            
+            @if (topProducts != null && topProducts.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="ajo-table">
+                        <thead>
+                            <tr>
+                                <th>Nama Produk</th>
+                                <th>Jumlah Transaksi</th>
+                                <th>Porsi Transaksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var prod in topProducts)
+                            {
+                                <tr>
+                                    <td class="font-weight-500">@prod["ProductName"]</td>
+                                    <td>@prod["Count"] transaksi</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="mr-2 font-weight-500">@prod["Percentage"]%</span>
+                                            <div class="progress" style="height: 6px; width: 100px; border-radius: 100px;">
+                                                <div class="progress-bar" role="progressbar" style="width: @prod["Percentage"]%; background-color: var(--primary); border-radius: 100px;" aria-valuenow="@prod["Percentage"]" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-secondary">
+                    <i class="fas fa-box-open mb-2" style="font-size: 24px;"></i>
+                    <p class="mb-0">Belum ada transaksi produk hari ini.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section jsContent {
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Data from controller
+            var hourlyData = JSON.parse('@Html.Raw(ViewBag.HourlyDataJson)');
+            var successCount = @ViewBag.SuccessCount;
+            var failedCount = @ViewBag.FailedCount;
+            var pendingCount = @ViewBag.PendingCount;
+
+            // 1. Hourly Bar Chart
+            var ctxHourly = document.getElementById('hourlyChart').getContext('2d');
+            var hourlyChart = new Chart(ctxHourly, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => String(i).padStart(2, '0') + ':00'),
+                    datasets: [{
+                        label: 'Transaksi',
+                        data: hourlyData,
+                        backgroundColor: '#0064e0', // Cobalt Primary
+                        borderRadius: 4,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Montserrat',
+                                    size: 10
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#dee3e9'
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                font: {
+                                    family: 'Montserrat',
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Ratio Pie Chart
+            var ctxRatio = document.getElementById('ratioChart').getContext('2d');
+            
+            if (successCount === 0 && failedCount === 0 && pendingCount === 0) {
+                // Empty state for chart
+                ctxRatio.font = '14px Montserrat';
+                ctxRatio.fillStyle = '#8595a4';
+                ctxRatio.textAlign = 'center';
+                ctxRatio.fillText('Tidak ada data rasio transaksi', 150, 125);
+            } else {
+                var ratioChart = new Chart(ctxRatio, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Sukses', 'Gagal', 'Pending'],
+                        datasets: [{
+                            data: [successCount, failedCount, pendingCount],
+                            backgroundColor: ['#31a24c', '#e41e3f', '#f2a918'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    font: {
+                                        family: 'Montserrat',
+                                        weight: 'bold',
+                                        size: 12
+                                    },
+                                    padding: 15
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}
+

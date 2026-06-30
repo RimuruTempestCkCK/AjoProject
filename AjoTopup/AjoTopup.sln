@@ -1,0 +1,27 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31911.196
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AjoTopup", "AjoTopup.csproj", "{2742F577-E6B1-466B-8AAC-0ABDDE755185}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2742F577-E6B1-466B-8AAC-0ABDDE755185}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2742F577-E6B1-466B-8AAC-0ABDDE755185}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2742F577-E6B1-466B-8AAC-0ABDDE755185}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2742F577-E6B1-466B-8AAC-0ABDDE755185}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B0203D33-0EA8-49FA-B828-9FA4B73D7CAB}
+	EndGlobalSection
+EndGlobal
+
+
