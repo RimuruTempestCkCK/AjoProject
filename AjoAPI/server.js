@@ -22,22 +22,26 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // ------------------------------------------------------------------------------------
 // DATABASE CONNECTION (STRICT SUPABASE POSTGRESQL)
 // ------------------------------------------------------------------------------------
-if (!process.env.DATABASE_URL) {
+// Clean DATABASE_URL by stripping any accidental newlines or whitespace
+const rawDbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim().replace(/\s+/g, '') : null;
+
+if (!rawDbUrl) {
   console.warn('⚠️ WARNING: DATABASE_URL is not set in Environment Variables. Requests to database endpoints will fail until DATABASE_URL is configured.');
 }
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://localhost:5432/dummy',
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  connectionString: rawDbUrl || 'postgres://localhost:5432/dummy',
+  ssl: rawDbUrl ? { rejectUnauthorized: false } : false
 });
 
 // Helper function to handle database queries cleanly
 async function queryDb(text, params) {
-  if (!process.env.DATABASE_URL) {
+  if (!rawDbUrl) {
     throw new Error('DATABASE_URL environment variable is missing. Please set your Supabase database URI in Vercel Environment Variables or .env file.');
   }
   return await pool.query(text, params);
 }
+
 
 // Log Writer Helper
 async function addLog(trxId, logType, url, reqBody, statusCode, resBody, execTime) {
