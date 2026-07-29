@@ -3,7 +3,12 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pg from 'pg';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+const { Pool } = pg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -14,321 +19,394 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// In-memory Database Store
-const products = [
-  { code: 'TSEL5', name: 'Telkomsel 5.000', provider: 'Telkomsel', category: 'PULSA', price: 5500, commission: 150, isActive: true },
-  { code: 'TSEL10', name: 'Telkomsel 10.000', provider: 'Telkomsel', category: 'PULSA', price: 10500, commission: 250, isActive: true },
-  { code: 'TSEL20', name: 'Telkomsel 20.000', provider: 'Telkomsel', category: 'PULSA', price: 20300, commission: 400, isActive: true },
-  { code: 'TSEL50', name: 'Telkomsel 50.000', provider: 'Telkomsel', category: 'PULSA', price: 50100, commission: 750, isActive: true },
-  { code: 'TSEL100', name: 'Telkomsel 100.000', provider: 'Telkomsel', category: 'PULSA', price: 99500, commission: 1200, isActive: true },
-  { code: 'ISAT5', name: 'Indosat 5.000', provider: 'Indosat', category: 'PULSA', price: 5450, commission: 150, isActive: true },
-  { code: 'ISAT10', name: 'Indosat 10.000', provider: 'Indosat', category: 'PULSA', price: 10450, commission: 250, isActive: true },
-  { code: 'ISAT25', name: 'Indosat 25.000', provider: 'Indosat', category: 'PULSA', price: 25150, commission: 500, isActive: true },
-  { code: 'XL10', name: 'XL 10.000', provider: 'XL', category: 'PULSA', price: 10450, commission: 250, isActive: true },
-  { code: 'XL25', name: 'XL 25.000', provider: 'XL', category: 'PULSA', price: 25200, commission: 500, isActive: true },
-  { code: 'AXIS5', name: 'Axis 5.000', provider: 'Axis', category: 'PULSA', price: 5450, commission: 150, isActive: true },
-  { code: 'AXIS25', name: 'Axis 25.000', provider: 'Axis', category: 'PULSA', price: 25100, commission: 600, isActive: true },
-  { code: 'PLN20', name: 'Token PLN 20.000', provider: 'PLN', category: 'PLN', price: 20500, commission: 300, isActive: true },
-  { code: 'PLN50', name: 'Token PLN 50.000', provider: 'PLN', category: 'PLN', price: 50500, commission: 300, isActive: true },
-  { code: 'DANA25', name: 'Saldo DANA 25.000', provider: 'Dana', category: 'EWALLET', price: 25500, commission: 300, isActive: true },
-  { code: 'OVO20', name: 'Saldo OVO 20.000', provider: 'Ovo', category: 'EWALLET', price: 20500, commission: 200, isActive: true },
-  { code: 'GOPAY25', name: 'Saldo GoPay 25.000', provider: 'GoPay', category: 'EWALLET', price: 25500, commission: 300, isActive: true }
-];
+// ------------------------------------------------------------------------------------
+// DATABASE CONNECTION (STRICT SUPABASE POSTGRESQL)
+// ------------------------------------------------------------------------------------
+if (!process.env.DATABASE_URL) {
+  console.warn('⚠️ WARNING: DATABASE_URL is not set in Environment Variables. Requests to database endpoints will fail until DATABASE_URL is configured.');
+}
 
-const providers = [
-  { code: 'TSEL', name: 'Telkomsel', status: 'ACTIVE', balance: 50000000, avgLatencyMs: 240 },
-  { code: 'ISAT', name: 'Indosat', status: 'ACTIVE', balance: 35000000, avgLatencyMs: 310 },
-  { code: 'XL', name: 'XL', status: 'ACTIVE', balance: 30000000, avgLatencyMs: 280 },
-  { code: 'AXIS', name: 'Axis', status: 'ACTIVE', balance: 20000000, avgLatencyMs: 350 },
-  { code: 'PLN', name: 'PLN', status: 'ACTIVE', balance: 100000000, avgLatencyMs: 420 },
-  { code: 'DANA', name: 'Dana', status: 'ACTIVE', balance: 40000000, avgLatencyMs: 190 },
-  { code: 'OVO', name: 'Ovo', status: 'ACTIVE', balance: 40000000, avgLatencyMs: 210 },
-  { code: 'GOPAY', name: 'GoPay', status: 'ACTIVE', balance: 50000000, avgLatencyMs: 200 }
-];
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgres://localhost:5432/dummy',
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
 
-let transactions = [
-  {
-    trxId: 'TRX2026072900001',
-    productCode: 'TSEL10',
-    productName: 'Telkomsel 10.000',
-    destination: '081234567890',
-    amount: 10500,
-    commission: 250,
-    status: 'SUCCESS',
-    providerStatus: 'SUCCESS',
-    providerMessage: 'Topup berhasil',
-    serialNumber: 'SN89210982310',
-    requestDate: new Date(Date.now() - 3600000).toISOString(),
-    responseDate: new Date(Date.now() - 3599700).toISOString(),
-    responseTime: 300,
-    createdBy: 'operator1'
-  },
-  {
-    trxId: 'TRX2026072900002',
-    productCode: 'ISAT25',
-    productName: 'Indosat 25.000',
-    destination: '085712345678',
-    amount: 25150,
-    commission: 500,
-    status: 'SUCCESS',
-    providerStatus: 'SUCCESS',
-    providerMessage: 'Topup berhasil',
-    serialNumber: 'SN89210982311',
-    requestDate: new Date(Date.now() - 1800000).toISOString(),
-    responseDate: new Date(Date.now() - 1799600).toISOString(),
-    responseTime: 400,
-    createdBy: 'operator1'
+// Helper function to handle database queries cleanly
+async function queryDb(text, params) {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is missing. Please set your Supabase database URI in Vercel Environment Variables or .env file.');
   }
-];
+  return await pool.query(text, params);
+}
 
-let apiLogs = [];
-let trxCounter = transactions.length + 1;
+// Log Writer Helper
+async function addLog(trxId, logType, url, reqBody, statusCode, resBody, execTime) {
+  const reqBodyStr = typeof reqBody === 'object' ? JSON.stringify(reqBody) : reqBody;
+  const resBodyStr = typeof resBody === 'object' ? JSON.stringify(resBody) : resBody;
 
-// Logging Helper
-function addLog(trxId, logType, url, reqBody, statusCode, resBody, execTime) {
-  const logEntry = {
-    id: apiLogs.length + 1,
-    trxId,
-    logType,
-    url,
-    reqBody: typeof reqBody === 'object' ? JSON.stringify(reqBody) : reqBody,
-    statusCode,
-    resBody: typeof resBody === 'object' ? JSON.stringify(resBody) : resBody,
-    execTime,
-    timestamp: new Date().toISOString()
-  };
-  apiLogs.unshift(logEntry);
-  if (apiLogs.length > 200) apiLogs.pop(); // keep last 200 logs
-  return logEntry;
+  try {
+    await queryDb(
+      `INSERT INTO transaction_logs (trx_id, log_type, request_url, request_body, response_status_code, response_body, execution_time) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [trxId, logType, url, reqBodyStr, statusCode, resBodyStr, execTime]
+    );
+  } catch (err) {
+    console.error('Error writing audit log to Supabase:', err.message);
+  }
 }
 
 // ------------------------------------------------------------------------------------
-// REST API ENDPOINTS
+// REST API ENDPOINTS (STRICT SUPABASE DATA SOURCE)
 // ------------------------------------------------------------------------------------
 
 // Health Check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'UP',
-    service: 'AjoAPI Web API Engine',
-    version: '1.0.0',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// GET /api/products - List products
-app.get('/api/products', (req, res) => {
-  res.json({
-    statusCode: 200,
-    message: 'Success',
-    data: products
-  });
-});
-
-// GET /api/providers - List providers status
-app.get('/api/providers', (req, res) => {
-  res.json({
-    statusCode: 200,
-    message: 'Success',
-    data: providers
-  });
-});
-
-// POST /api/provider/toggle - Toggle provider status
-app.post('/api/provider/toggle', (req, res) => {
-  const { providerCode } = req.body;
-  const prov = providers.find(p => p.code === providerCode);
-  if (!prov) {
-    return res.status(404).json({ statusCode: 404, message: 'Provider not found' });
+app.get('/api/health', async (req, res) => {
+  try {
+    await queryDb('SELECT 1');
+    res.json({
+      status: 'UP',
+      database: 'ONLINE (Supabase PostgreSQL)',
+      service: 'AjoAPI Web API Engine',
+      version: '1.2.0',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'DOWN',
+      database: `ERROR: ${err.message}`,
+      service: 'AjoAPI Web API Engine',
+      timestamp: new Date().toISOString()
+    });
   }
-  prov.status = prov.status === 'ACTIVE' ? 'MAINTENANCE' : 'ACTIVE';
-  res.json({ statusCode: 200, message: `Provider ${prov.name} is now ${prov.status}`, data: prov });
 });
 
-// POST /api/transaction - Create Topup Transaction (Called by AjoTopup)
+// GET /api/products - Get products list from Supabase
+app.get('/api/products', async (req, res) => {
+  try {
+    const { rows } = await queryDb(
+      `SELECT 
+        product_code as code, 
+        product_name as name, 
+        provider, 
+        category_code as category, 
+        price::int, 
+        commission::int, 
+        is_active as "isActive" 
+       FROM products 
+       ORDER BY id ASC`
+    );
+    res.json({ statusCode: 200, message: 'Success', data: rows });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
+  }
+});
+
+// GET /api/providers - Get providers list from Supabase
+app.get('/api/providers', async (req, res) => {
+  try {
+    const { rows } = await queryDb(
+      `SELECT 
+        provider_code as code, 
+        provider_name as name, 
+        status, 
+        balance::int, 
+        250 as "avgLatencyMs" 
+       FROM providers 
+       ORDER BY provider_id ASC`
+    );
+    res.json({ statusCode: 200, message: 'Success', data: rows });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
+  }
+});
+
+// POST /api/provider/toggle - Toggle provider maintenance status in Supabase
+app.post('/api/provider/toggle', async (req, res) => {
+  const { providerCode } = req.body;
+  if (!providerCode) {
+    return res.status(400).json({ statusCode: 400, message: 'providerCode is required' });
+  }
+
+  try {
+    const { rows } = await queryDb('SELECT status, provider_name as name FROM providers WHERE provider_code = $1', [providerCode]);
+    if (rows.length === 0) {
+      return res.status(404).json({ statusCode: 404, message: 'Provider not found in Supabase' });
+    }
+
+    const newStatus = rows[0].status === 'ACTIVE' ? 'MAINTENANCE' : 'ACTIVE';
+    await queryDb('UPDATE providers SET status = $1 WHERE provider_code = $2', [newStatus, providerCode]);
+
+    res.json({
+      statusCode: 200,
+      message: `Provider ${rows[0].name} is now ${newStatus}`,
+      data: { code: providerCode, status: newStatus }
+    });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
+  }
+});
+
+// POST /api/transaction - Process topup transaction & store in Supabase
 app.post('/api/transaction', async (req, res) => {
   const startTime = Date.now();
-  const { productCode, destination, createdBy } = req.body;
+  const { productCode, destination, createdBy = 'operator1' } = req.body;
 
   if (!productCode || !destination) {
-    addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'ProductCode and Destination are required' }, 5);
-    return res.status(400).json({
-      statusCode: 400,
-      message: 'Product Code and Destination are required'
-    });
+    await addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'ProductCode and Destination are required' }, 5);
+    return res.status(400).json({ statusCode: 400, message: 'Product Code and Destination are required' });
   }
 
-  const product = products.find(p => p.code === productCode);
-  if (!product) {
-    addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'Product not found' }, 5);
-    return res.status(400).json({
-      statusCode: 400,
-      message: `Product code '${productCode}' does not exist`
-    });
-  }
-
-  if (!product.isActive) {
-    addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'Product is inactive' }, 5);
-    return res.status(400).json({
-      statusCode: 400,
-      message: 'Product is currently inactive'
-    });
-  }
-
-  // Check destination format (8-13 digits)
   const destClean = destination.trim();
   if (!/^0[0-9]{7,12}$/.test(destClean)) {
-    addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'Invalid destination' }, 5);
-    return res.status(400).json({
-      statusCode: 400,
-      message: 'Destination number must be 8-13 digits starting with 0'
-    });
+    await addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'Invalid destination' }, 5);
+    return res.status(400).json({ statusCode: 400, message: 'Destination number must be 8-13 digits starting with 0' });
   }
 
-  // Check provider status
-  const provider = providers.find(p => p.name === product.provider);
-  if (provider && provider.status !== 'ACTIVE') {
-    addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 503, { message: 'Provider under maintenance' }, 10);
-    return res.status(503).json({
-      statusCode: 503,
-      message: `Provider ${product.provider} is currently under maintenance`
+  try {
+    // 1. Fetch Product from Supabase
+    const prodRes = await queryDb(
+      `SELECT product_code as code, product_name as name, provider, price::int, commission::int, is_active as "isActive" 
+       FROM products WHERE product_code = $1`,
+      [productCode]
+    );
+
+    if (prodRes.rows.length === 0) {
+      await addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'Product not found' }, 5);
+      return res.status(400).json({ statusCode: 400, message: `Product code '${productCode}' does not exist in Supabase` });
+    }
+
+    const product = prodRes.rows[0];
+    if (!product.isActive) {
+      await addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 400, { message: 'Product is inactive' }, 5);
+      return res.status(400).json({ statusCode: 400, message: 'Product is currently inactive' });
+    }
+
+    // 2. Fetch Provider Status from Supabase
+    const provRes = await queryDb('SELECT status FROM providers WHERE provider_name = $1', [product.provider]);
+    if (provRes.rows.length > 0 && provRes.rows[0].status !== 'ACTIVE') {
+      await addLog('TRX_ERR', 'MVC_TO_API', '/api/transaction', req.body, 503, { message: 'Provider under maintenance' }, 10);
+      return res.status(503).json({ statusCode: 503, message: `Provider ${product.provider} is currently under maintenance` });
+    }
+
+    // 3. Generate TrxId
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const trxId = `TRX${dateStr}${String(Math.floor(Math.random() * 90000) + 10000)}`;
+
+    await addLog(trxId, 'MVC_TO_API', '/api/transaction', req.body, 200, 'Processing', 0);
+
+    // 4. Simulate Provider Processing Delay
+    const simulatedDelay = Math.floor(Math.random() * 450) + 150;
+    await new Promise(r => setTimeout(r, simulatedDelay));
+
+    const isSuccess = Math.random() < 0.90;
+    const executionTime = Date.now() - startTime;
+    const serialNumber = isSuccess ? `SN${Math.floor(100000000000 + Math.random() * 900000000000)}` : null;
+    const status = isSuccess ? 'SUCCESS' : 'FAILED';
+    const providerMessage = isSuccess ? 'Topup berhasil' : 'Gagal: Provider Timeout / Balance Limit';
+
+    const newTrx = {
+      trxId,
+      productCode: product.code,
+      productName: product.name,
+      destination: destClean,
+      amount: product.price,
+      commission: product.commission,
+      status,
+      providerStatus: status,
+      providerMessage,
+      serialNumber,
+      requestDate: new Date(startTime).toISOString(),
+      responseDate: new Date().toISOString(),
+      responseTime: executionTime,
+      createdBy
+    };
+
+    // 5. Store Transaction strictly in Supabase
+    await queryDb(
+      `INSERT INTO transactions 
+        (trx_id, product_code, destination, amount, commission, status, provider_status, provider_message, serial_number, request_date, response_date, response_time, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [trxId, product.code, destClean, product.price, product.commission, status, status, providerMessage, serialNumber, newTrx.requestDate, newTrx.responseDate, executionTime, createdBy]
+    );
+
+    await addLog(trxId, 'API_TO_PROVIDER', `/provider/${product.provider.toLowerCase()}/topup`, { trxId, destination: destClean, productCode: product.code }, 200, 'OK', simulatedDelay);
+    await addLog(trxId, 'API_RESPONSE', '/api/transaction', '', 200, newTrx, executionTime);
+
+    res.json({
+      statusCode: 200,
+      message: 'Transaction processed and saved to Supabase successfully',
+      data: newTrx
     });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
   }
-
-  // Generate TrxId
-  const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const trxId = `TRX${dateStr}${String(trxCounter++).padStart(5, '0')}`;
-
-  addLog(trxId, 'MVC_TO_API', '/api/transaction', req.body, 200, 'Processing', 0);
-
-  // Simulate Upstream Provider Processing Delay (150ms - 600ms)
-  const simulatedDelay = Math.floor(Math.random() * 450) + 150;
-  await new Promise(r => setTimeout(r, simulatedDelay));
-
-  // 90% Success simulation
-  const isSuccess = Math.random() < 0.90;
-  const executionTime = Date.now() - startTime;
-
-  let newTrx = {
-    trxId,
-    productCode: product.code,
-    productName: product.name,
-    destination: destClean,
-    amount: product.price,
-    commission: product.commission,
-    status: isSuccess ? 'SUCCESS' : 'FAILED',
-    providerStatus: isSuccess ? 'SUCCESS' : 'FAILED',
-    providerMessage: isSuccess ? 'Topup berhasil' : 'Gagal: Provider Timeout / Balance Limit',
-    serialNumber: isSuccess ? `SN${Math.floor(100000000000 + Math.random() * 900000000000)}` : null,
-    requestDate: new Date(startTime).toISOString(),
-    responseDate: new Date().toISOString(),
-    responseTime: executionTime,
-    createdBy: createdBy || 'operator1'
-  };
-
-  transactions.unshift(newTrx);
-
-  // Log API & Provider trace
-  addLog(trxId, 'API_TO_PROVIDER', `/provider/${product.provider.toLowerCase()}/topup`, { trxId, destination: destClean, productCode: product.code }, 200, 'OK', simulatedDelay);
-  addLog(trxId, 'API_RESPONSE', '/api/transaction', '', 200, newTrx, executionTime);
-
-  res.json({
-    statusCode: 200,
-    message: 'Transaction processed successfully',
-    data: newTrx
-  });
 });
 
-// GET /api/transaction - Query transaction history
-app.get('/api/transaction', (req, res) => {
+// GET /api/transaction - Fetch transaction history from Supabase with pagination & filters
+app.get('/api/transaction', async (req, res) => {
   const { status, productCode, pageNumber = 1, pageSize = 10 } = req.query;
-
-  let filtered = [...transactions];
-  if (status) {
-    filtered = filtered.filter(t => t.status.toUpperCase() === status.toUpperCase());
-  }
-  if (productCode) {
-    filtered = filtered.filter(t => t.productCode === productCode);
-  }
-
   const page = parseInt(pageNumber);
   const size = parseInt(pageSize);
   const offset = (page - 1) * size;
-  const pagedList = filtered.slice(offset, offset + size);
-  const totalPages = Math.ceil(filtered.length / size) || 1;
 
-  res.json({
-    statusCode: 200,
-    message: 'Success',
-    data: {
-      totalRecords: filtered.length,
-      pageNumber: page,
-      pageSize: size,
-      totalPages,
-      transactions: pagedList
+  try {
+    let query = `
+      SELECT 
+        trx_id as "trxId", 
+        product_code as "productCode", 
+        destination, 
+        amount::int, 
+        commission::int, 
+        status, 
+        provider_status as "providerStatus", 
+        provider_message as "providerMessage", 
+        serial_number as "serialNumber", 
+        request_date as "requestDate", 
+        response_date as "responseDate", 
+        response_time as "responseTime", 
+        created_by as "createdBy" 
+      FROM transactions 
+      WHERE 1=1`;
+    
+    const params = [];
+
+    if (status) {
+      params.push(status.toUpperCase());
+      query += ` AND UPPER(status) = $${params.length}`;
     }
-  });
-});
+    if (productCode) {
+      params.push(productCode);
+      query += ` AND product_code = $${params.length}`;
+    }
 
-// GET /api/transaction/:id - Detail & Logs
-app.get('/api/transaction/:id', (req, res) => {
-  const { id } = req.params;
-  const trx = transactions.find(t => t.trxId === id);
+    const countRes = await queryDb(`SELECT COUNT(*) FROM (${query}) as filtered`, params);
+    const totalRecords = parseInt(countRes.rows[0].count);
 
-  if (!trx) {
-    return res.status(404).json({ statusCode: 404, message: 'Transaction not found' });
+    params.push(size, offset);
+    query += ` ORDER BY request_date DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+
+    const { rows } = await queryDb(query, params);
+
+    res.json({
+      statusCode: 200,
+      message: 'Success',
+      data: {
+        totalRecords,
+        pageNumber: page,
+        pageSize: size,
+        totalPages: Math.ceil(totalRecords / size) || 1,
+        transactions: rows
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
   }
+});
 
-  const logs = apiLogs.filter(l => l.trxId === id);
+// GET /api/transaction/:id - Detail & Audit Logs from Supabase
+app.get('/api/transaction/:id', async (req, res) => {
+  const { id } = req.params;
 
-  res.json({
-    statusCode: 200,
-    message: 'Success',
-    data: {
-      ...trx,
-      logs
+  try {
+    const trxRes = await queryDb(
+      `SELECT 
+        trx_id as "trxId", 
+        product_code as "productCode", 
+        destination, 
+        amount::int, 
+        commission::int, 
+        status, 
+        provider_status as "providerStatus", 
+        provider_message as "providerMessage", 
+        serial_number as "serialNumber", 
+        request_date as "requestDate", 
+        response_date as "responseDate", 
+        response_time as "responseTime", 
+        created_by as "createdBy" 
+       FROM transactions WHERE trx_id = $1`,
+      [id]
+    );
+
+    if (trxRes.rows.length === 0) {
+      return res.status(404).json({ statusCode: 404, message: 'Transaction not found in Supabase' });
     }
-  });
+
+    const logsRes = await queryDb(
+      `SELECT 
+        id, 
+        trx_id as "trxId", 
+        log_type as "logType", 
+        request_url as "url", 
+        request_body as "reqBody", 
+        response_status_code as "statusCode", 
+        response_body as "resBody", 
+        execution_time as "execTime", 
+        created_date as timestamp 
+       FROM transaction_logs WHERE trx_id = $1 ORDER BY id ASC`,
+      [id]
+    );
+
+    res.json({
+      statusCode: 200,
+      message: 'Success',
+      data: {
+        ...trxRes.rows[0],
+        logs: logsRes.rows
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
+  }
 });
 
-// GET /api/stats - Real-time metrics
-app.get('/api/stats', (req, res) => {
-  const totalTrx = transactions.length;
-  const successTrx = transactions.filter(t => t.status === 'SUCCESS').length;
-  const failedTrx = transactions.filter(t => t.status === 'FAILED').length;
-  const pendingTrx = transactions.filter(t => t.status === 'PENDING').length;
+// GET /api/stats - Real-time metrics calculated strictly from Supabase
+app.get('/api/stats', async (req, res) => {
+  try {
+    const statsRes = await queryDb(`
+      SELECT 
+        COUNT(*)::int as "totalTrx",
+        COUNT(*) FILTER (WHERE status = 'SUCCESS')::int as "successTrx",
+        COUNT(*) FILTER (WHERE status = 'FAILED')::int as "failedTrx",
+        COUNT(*) FILTER (WHERE status = 'PENDING')::int as "pendingTrx",
+        COALESCE(SUM(amount) FILTER (WHERE status = 'SUCCESS'), 0)::int as "totalVolume",
+        COALESCE(SUM(commission) FILTER (WHERE status = 'SUCCESS'), 0)::int as "totalCommission",
+        COALESCE(AVG(response_time), 0)::int as "avgLatencyMs"
+      FROM transactions
+    `);
 
-  const totalVolume = transactions.reduce((acc, t) => t.status === 'SUCCESS' ? acc + t.amount : acc, 0);
-  const totalCommission = transactions.reduce((acc, t) => t.status === 'SUCCESS' ? acc + t.commission : acc, 0);
+    const data = statsRes.rows[0];
+    data.successRatePct = data.totalTrx > 0 ? Math.round((data.successTrx / data.totalTrx) * 100) : 100;
 
-  const avgLatency = totalTrx > 0 
-    ? Math.round(transactions.reduce((acc, t) => acc + (t.responseTime || 0), 0) / totalTrx)
-    : 0;
-
-  res.json({
-    statusCode: 200,
-    data: {
-      totalTrx,
-      successTrx,
-      failedTrx,
-      pendingTrx,
-      successRatePct: totalTrx > 0 ? Math.round((successTrx / totalTrx) * 100) : 100,
-      totalVolume,
-      totalCommission,
-      avgLatencyMs: avgLatency
-    }
-  });
+    res.json({ statusCode: 200, data });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
+  }
 });
 
-// GET /api/logs - Live Integration Logs Stream
-app.get('/api/logs', (req, res) => {
-  res.json({
-    statusCode: 200,
-    data: apiLogs.slice(0, 50)
-  });
+// GET /api/logs - Live Integration Logs Stream from Supabase
+app.get('/api/logs', async (req, res) => {
+  try {
+    const { rows } = await queryDb(
+      `SELECT 
+        id, 
+        trx_id as "trxId", 
+        log_type as "logType", 
+        request_url as "url", 
+        request_body as "reqBody", 
+        response_status_code as "statusCode", 
+        response_body as "resBody", 
+        execution_time as "execTime", 
+        created_date as timestamp 
+       FROM transaction_logs 
+       ORDER BY id DESC LIMIT 50`
+    );
+    res.json({ statusCode: 200, data: rows });
+  } catch (err) {
+    res.status(500).json({ statusCode: 500, message: `Supabase Error: ${err.message}` });
+  }
 });
 
-// Fallback for React Single Page Application
+// Fallback SPA Router
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ statusCode: 404, message: 'Endpoint not found' });
@@ -336,9 +414,12 @@ app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Start Web API Server
-app.listen(PORT, () => {
-  console.log(`🚀 AjoAPI Web API Engine running on http://localhost:${PORT}`);
-  console.log(`📡 Endpoints available: /api/transaction, /api/products, /api/providers, /api/stats, /api/health`);
-  console.log(`💻 React JS Dashboard available at: http://localhost:${PORT}`);
-});
+// Production Serverless Handler Export
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 AjoAPI Web API Engine running on http://localhost:${PORT}`);
+    console.log(`📡 Connected strictly to Supabase PostgreSQL Database`);
+  });
+}
+
+export default app;
