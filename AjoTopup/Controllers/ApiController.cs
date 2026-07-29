@@ -158,7 +158,7 @@ namespace AjoTopup.Controllers
             string updateSql = string.Format(
                 "UPDATE Transactions SET Status = '{0}', ProviderStatus = '{0}', ProviderMessage = '{1}', SerialNumber = {2}, ResponseDate = GETDATE(), ResponseTime = {3} WHERE TrxId = '{4}'",
                 providerResponse.Status,
-                providerResponse.Message.Replace("'", "''"),
+                (providerResponse.Message ?? "").Replace("'", "''"),
                 providerResponse.Sn != null ? "'" + providerResponse.Sn.Replace("'", "''") + "'" : "NULL",
                 watch.ElapsedMilliseconds,
                 trxId

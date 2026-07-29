@@ -1,0 +1,29 @@
+{
+  "name": "ajoapi",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "concurrently \"node server.js\" \"vite\"",
+    "api": "node server.js",
+    "ui": "vite --port 5173",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "body-parser": "^2.3.0",
+    "concurrently": "^10.0.4",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "lucide-react": "^1.27.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "vite": "^8.1.1"
+  }
+}

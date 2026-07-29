@@ -23,8 +23,8 @@ namespace AjoTopup.Controllers
                 // 1. Total Transactions Today (Count & Amount)
                 string totalSql = "SELECT COUNT(*) as TrxCount, ISNULL(SUM(Amount), 0) as TrxAmount FROM Transactions WHERE CAST(RequestDate AS DATE) = CAST(GETDATE() AS DATE)";
                 var totalRow = DAL.getDataRow(totalSql);
-                int totalCount = Convert.ToInt32(totalRow["TrxCount"]);
-                decimal totalAmount = Convert.ToDecimal(totalRow["TrxAmount"]);
+                int totalCount = (totalRow != null && totalRow.ContainsKey("TrxCount") && totalRow["TrxCount"] != DBNull.Value) ? Convert.ToInt32(totalRow["TrxCount"]) : 0;
+                decimal totalAmount = (totalRow != null && totalRow.ContainsKey("TrxAmount") && totalRow["TrxAmount"] != DBNull.Value) ? Convert.ToDecimal(totalRow["TrxAmount"]) : 0;
 
                 // 2. Success Count & Percentage
                 string successSql = "SELECT COUNT(*) FROM Transactions WHERE CAST(RequestDate AS DATE) = CAST(GETDATE() AS DATE) AND Status = 'SUCCESS'";

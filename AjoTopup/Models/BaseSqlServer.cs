@@ -213,7 +213,7 @@ namespace AjoTopup.Models
                 {
                     int offset = (rows * page) - rows;
                     offset = (offset < 0 ? 0 : offset);
-                    sqlGrid += " limit " + rows.ToString() + " offset " + offset.ToString();
+                    sqlGrid += " OFFSET " + offset.ToString() + " ROWS FETCH NEXT " + rows.ToString() + " ROWS ONLY ";
                 }
 
                 List<Dictionary<string, object>> resData = getDataList(sqlGrid);
@@ -510,10 +510,14 @@ namespace AjoTopup.Models
                 if (audit)
                 {
                     var dtnow = DateTime.Now;
-                    data.Add("create_user", HttpContext.Current.Session["userid"]);
-                    data.Add("create_date", dtnow);
-                    data.Add("update_user", HttpContext.Current.Session["userid"]);
-                    data.Add("update_date", dtnow);
+                    string currentUser = (HttpContext.Current != null && HttpContext.Current.Session != null && HttpContext.Current.Session["username"] != null)
+                        ? HttpContext.Current.Session["username"].ToString()
+                        : "System";
+
+                    if (!data.ContainsKey("CreatedBy") && !data.ContainsKey("createdby"))
+                        data.Add("CreatedBy", currentUser);
+                    if (!data.ContainsKey("CreatedDate") && !data.ContainsKey("createddate"))
+                        data.Add("CreatedDate", dtnow);
                 }
                 string sql = "";
                 string[] arrFields = data.Keys.ToArray();
@@ -522,13 +526,7 @@ namespace AjoTopup.Models
                 {
                     arrValues[i] = string.Concat("@", arrFields[i]);
                 }
-                sql = "insert into " + tblName + " (\"" + string.Join("\", \"", arrFields) + "\") values (" + string.Join(", ", arrValues) + ")";
-                //if (autoinsert == true)
-                //{
-                //    sql = sql + " RETURNING id";
-                //}
-                //HttpContext.Current.Response.Write(sql);
-                //HttpContext.Current.Response.End();
+                sql = "insert into " + tblName + " ([" + string.Join("], [", arrFields) + "]) values (" + string.Join(", ", arrValues) + ")";
 
                 cmd.CommandText = sql;
                 for (int i = 0; i < arrFields.Length; i++)
@@ -550,15 +548,21 @@ namespace AjoTopup.Models
             {
                 if (audit)
                 {
-                    data.Add("update_user", HttpContext.Current.Session["userid"]);
-                    data.Add("update_date", DateTime.Now);
+                    string currentUser = (HttpContext.Current != null && HttpContext.Current.Session != null && HttpContext.Current.Session["username"] != null)
+                        ? HttpContext.Current.Session["username"].ToString()
+                        : "System";
+
+                    if (!data.ContainsKey("UpdatedBy") && !data.ContainsKey("updatedby"))
+                        data.Add("UpdatedBy", currentUser);
+                    if (!data.ContainsKey("UpdatedDate") && !data.ContainsKey("updateddate"))
+                        data.Add("UpdatedDate", DateTime.Now);
                 }
                 string sql = "";
                 string[] arrValues = new string[data.Count];
                 int i = 0;
                 foreach (KeyValuePair<string, object> iData in data)
                 {
-                    arrValues[i] = string.Concat(iData.Key, "= @", iData.Key);
+                    arrValues[i] = string.Concat("[", iData.Key, "] = @", iData.Key);
                     i++;
                 }
 

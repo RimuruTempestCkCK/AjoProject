@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -42,14 +43,27 @@ namespace AjoTopup.Controllers
 
             try
             {
-                // Dynamic Base URL to call local API controller
-                string baseUrl = string.Format("{0}://{1}{2}", Request.Url.Scheme, Request.Url.Authority, Url.Content("~"));
-                if (!baseUrl.EndsWith("/")) baseUrl += "/";
-                string apiUrl = baseUrl + "api/transaction";
+                // Dynamic Base URL to call Web API (AjoAPI or local API)
+                string configuredApiUrl = ConfigurationManager.AppSettings["AjoApiBaseUrl"];
+                string apiUrl;
+                if (!string.IsNullOrEmpty(configuredApiUrl))
+                {
+                    if (!configuredApiUrl.EndsWith("/")) configuredApiUrl += "/";
+                    apiUrl = configuredApiUrl + "transaction";
+                }
+                else
+                {
+                    string baseUrl = string.Format("{0}://{1}{2}", Request.Url.Scheme, Request.Url.Authority, Url.Content("~"));
+                    if (!baseUrl.EndsWith("/")) baseUrl += "/";
+                    apiUrl = baseUrl + "api/transaction";
+                }
 
                 // Prepare request body
                 var reqData = new { productCode = productCode, destination = destination };
                 string jsonPayload = JsonConvert.SerializeObject(reqData);
+
+                // Ensure SSL certificate validation doesn't block local dev requests
+                ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
 
                 // Use HttpWebRequest for wider framework compatibility
                 HttpWebRequest webReq = (HttpWebRequest)WebRequest.Create(apiUrl);
@@ -169,10 +183,20 @@ namespace AjoTopup.Controllers
 
             try
             {
-                // Dynamic Base URL to call local API controller
-                string baseUrl = string.Format("{0}://{1}{2}", Request.Url.Scheme, Request.Url.Authority, Url.Content("~"));
-                if (!baseUrl.EndsWith("/")) baseUrl += "/";
-                string apiUrl = baseUrl + "api/transaction/" + id;
+                // Dynamic Base URL to call Web API (AjoAPI or local API)
+                string configuredApiUrl = ConfigurationManager.AppSettings["AjoApiBaseUrl"];
+                string apiUrl;
+                if (!string.IsNullOrEmpty(configuredApiUrl))
+                {
+                    if (!configuredApiUrl.EndsWith("/")) configuredApiUrl += "/";
+                    apiUrl = configuredApiUrl + "transaction/" + id;
+                }
+                else
+                {
+                    string baseUrl = string.Format("{0}://{1}{2}", Request.Url.Scheme, Request.Url.Authority, Url.Content("~"));
+                    if (!baseUrl.EndsWith("/")) baseUrl += "/";
+                    apiUrl = baseUrl + "api/transaction/" + id;
+                }
 
                 HttpWebRequest webReq = (HttpWebRequest)WebRequest.Create(apiUrl);
                 webReq.Method = "GET";
