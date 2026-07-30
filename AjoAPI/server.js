@@ -815,6 +815,10 @@ app.get('/api/logs', async (req, res) => {
 
 // Fallback SPA Router
 app.use((req, res, next) => {
+  // Allow Swagger UI routes to pass through
+  if (req.path.startsWith('/api/docs') || req.path === '/api/docs.json') {
+    return next();
+  }
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ statusCode: 404, message: 'Endpoint not found' });
   }
