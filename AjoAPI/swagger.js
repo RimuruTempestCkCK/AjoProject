@@ -5,17 +5,17 @@ const options = {
     openapi: '3.0.0',
     info: {
       title: 'AjoAPI - Payment & Topup Engine',
-      version: '1.0.0',
+      version: '1.2.0',
       description: `
 ## Overview
-AjoAPI adalah REST API untuk sistem pembayaran dan top-up yang menyediakan layanan pulsa, token listrik, dan e-wallet.
+AjoAPI adalah REST API untuk sistem pembayaran dan top-up yang menyediakan layanan pulsa, token listrik, dan e-wallet dengan backend Supabase PostgreSQL.
 
 ## Features
 - **Products Management**: Mengelola produk yang tersedia (pulsa, PLN, e-wallet)
 - **Provider Management**: Mengelola provider dan status operasional
-- **Transaction Processing**: Memproses transaksi top-up/pembayaran
-- **Statistics**: Statistik dan laporan transaksi
-- **API Logs**: Monitoring log API
+- **Transaction Processing**: Memproses transaksi top-up/pembayaran dengan Supabase
+- **Statistics**: Statistik dan laporan transaksi real-time
+- **API Logs**: Monitoring log API dari database
 
 ## Authentication
 Saat ini API belum memerlukan autentikasi. Untuk production, disarankan menambahkan JWT/API Key.
@@ -34,12 +34,12 @@ Tidak ada rate limiting saat ini. Untuk production, disarankan untuk menambahkan
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: 'http://localhost:5000',
         description: 'Development server'
       },
       {
-        url: 'https://your-production.vercel.app',
-        description: 'Production server'
+        url: 'https://ajo-project.vercel.app',
+        description: 'Production server (Vercel)'
       }
     ],
     components: {
@@ -203,13 +203,17 @@ Tidak ada rate limiting saat ini. Untuk production, disarankan untuk menambahkan
               type: 'string',
               example: 'UP'
             },
+            database: {
+              type: 'string',
+              example: 'ONLINE (Supabase PostgreSQL)'
+            },
             service: {
               type: 'string',
-              example: 'AjoAPI Web API Engine (Vercel Serverless)'
+              example: 'AjoAPI Web API Engine'
             },
             version: {
               type: 'string',
-              example: '1.0.0'
+              example: '1.2.0'
             },
             timestamp: {
               type: 'string',
@@ -235,6 +239,11 @@ Tidak ada rate limiting saat ini. Untuk production, disarankan untuk menambahkan
               description: 'Failed transactions',
               example: 10
             },
+            pendingTrx: {
+              type: 'integer',
+              description: 'Pending transactions',
+              example: 0
+            },
             successRatePct: {
               type: 'integer',
               description: 'Success rate percentage',
@@ -244,6 +253,11 @@ Tidak ada rate limiting saat ini. Untuk production, disarankan untuk menambahkan
               type: 'integer',
               description: 'Total volume in Rupiah',
               example: 950000
+            },
+            totalCommission: {
+              type: 'integer',
+              description: 'Total commission in Rupiah',
+              example: 22500
             },
             avgLatencyMs: {
               type: 'integer',
@@ -350,7 +364,7 @@ Tidak ada rate limiting saat ini. Untuk production, disarankan untuk menambahkan
       }
     }
   },
-  apis: ['./api/*.js']
+  apis: ['./server.js']
 };
 
 const swaggerSpec = swaggerJSDoc(options);

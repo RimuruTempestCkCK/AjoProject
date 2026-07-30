@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger.js';
 
 dotenv.config();
 
@@ -18,6 +20,21 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'dist')));
+
+// Swagger UI
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'AjoAPI Documentation',
+  swaggerOptions: {
+    persistAuthorization: true
+  }
+}));
+
+// OpenAPI JSON endpoint
+app.get('/api/docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // ------------------------------------------------------------------------------------
 // DATABASE CONNECTION (STRICT SUPABASE POSTGRESQL)
@@ -64,6 +81,27 @@ async function addLog(trxId, logType, url, reqBody, statusCode, resBody, execTim
 // ------------------------------------------------------------------------------------
 
 // Health Check
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     tags: [Health]
+ *     summary: Health check endpoint
+ *     description: Returns the health status of AjoAPI service including database connectivity
+ *     responses:
+ *       200:
+ *         description: Service is healthy and database is connected
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ *       500:
+ *         description: Database connection error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/health', async (req, res) => {
   try {
     await queryDb('SELECT 1');
@@ -85,6 +123,38 @@ app.get('/api/health', async (req, res) => {
 });
 
 // GET /api/products - Get products list from Supabase
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get all available products
+ *     description: Returns a list of all products from Supabase including pulsa, PLN tokens, and e-wallet top-ups
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/products', async (req, res) => {
   try {
     const { rows } = await queryDb(
@@ -106,6 +176,38 @@ app.get('/api/products', async (req, res) => {
 });
 
 // GET /api/providers - Get providers list from Supabase
+/**
+ * @swagger
+ * /api/providers:
+ *   get:
+ *     tags: [Providers]
+ *     summary: Get all providers
+ *     description: Returns a list of all payment and top-up providers from Supabase
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Provider'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/providers', async (req, res) => {
   try {
     const { rows } = await queryDb(
@@ -125,6 +227,62 @@ app.get('/api/providers', async (req, res) => {
 });
 
 // POST /api/provider/toggle - Toggle provider maintenance status in Supabase
+/**
+ * @swagger
+ * /api/provider/toggle:
+ *   post:
+ *     tags: [Providers]
+ *     summary: Toggle provider status
+ *     description: Toggle a provider's status between ACTIVE and MAINTENANCE in Supabase
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - providerCode
+ *             properties:
+ *               providerCode:
+ *                 type: string
+ *                 description: Provider code (e.g., TSEL, ISAT, XL, AXIS, PLN, DANA, OVO, GOPAY)
+ *                 example: TSEL
+ *     responses:
+ *       200:
+ *         description: Provider status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Provider Telkomsel is now MAINTENANCE
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     code:
+ *                       type: string
+ *                       example: TSEL
+ *                     status:
+ *                       type: string
+ *                       example: MAINTENANCE
+ *       400:
+ *         description: Missing providerCode in request body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ *       404:
+ *         description: Provider not found in Supabase
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.post('/api/provider/toggle', async (req, res) => {
   const { providerCode } = req.body;
   if (!providerCode) {
@@ -151,6 +309,70 @@ app.post('/api/provider/toggle', async (req, res) => {
 });
 
 // POST /api/transaction - Process topup transaction & store in Supabase
+/**
+ * @swagger
+ * /api/transaction:
+ *   post:
+ *     tags: [Transactions]
+ *     summary: Create a new transaction
+ *     description: Process a new top-up or payment transaction and store it in Supabase. The system simulates provider response with 90% success rate.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productCode
+ *               - destination
+ *             properties:
+ *               productCode:
+ *                 type: string
+ *                 description: Product code to purchase
+ *                 example: TSEL10
+ *               destination:
+ *                 type: string
+ *                 description: Destination phone number (must start with 0, 8-13 digits)
+ *                 example: '081234567890'
+ *               createdBy:
+ *                 type: string
+ *                 description: User who initiated the transaction (default: operator1)
+ *                 example: operator1
+ *     responses:
+ *       200:
+ *         description: Transaction processed and saved to Supabase successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Transaction processed and saved to Supabase successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Transaction'
+ *       400:
+ *         description: Invalid request (missing fields or validation error)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ *       503:
+ *         description: Provider under maintenance
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.post('/api/transaction', async (req, res) => {
   const startTime = Date.now();
   const { productCode, destination, createdBy = 'operator1' } = req.body;
@@ -247,6 +469,80 @@ app.post('/api/transaction', async (req, res) => {
 });
 
 // GET /api/transaction - Fetch transaction history from Supabase with pagination & filters
+/**
+ * @swagger
+ * /api/transaction:
+ *   get:
+ *     tags: [Transactions]
+ *     summary: Get transactions list
+ *     description: Retrieve a paginated list of transactions from Supabase with optional filters
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [SUCCESS, FAILED, PENDING]
+ *         description: Filter by transaction status
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         description: Filter by product code
+ *       - in: query
+ *         name: pageNumber
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalRecords:
+ *                       type: integer
+ *                       example: 100
+ *                     pageNumber:
+ *                       type: integer
+ *                       example: 1
+ *                     pageSize:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 10
+ *                     transactions:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Transaction'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/transaction', async (req, res) => {
   const { status, productCode, pageNumber = 1, pageSize = 10 } = req.query;
   const page = parseInt(pageNumber);
@@ -308,6 +604,57 @@ app.get('/api/transaction', async (req, res) => {
 });
 
 // GET /api/transaction/:id - Detail & Audit Logs from Supabase
+/**
+ * @swagger
+ * /api/transaction/{id}:
+ *   get:
+ *     tags: [Transactions]
+ *     summary: Get transaction details with audit logs
+ *     description: Retrieve detailed information about a specific transaction including all audit logs from Supabase
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Transaction ID (e.g., TRX2026072900001)
+ *         example: TRX2026072900001
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/Transaction'
+ *                     - type: object
+ *                       properties:
+ *                         logs:
+ *                           type: array
+ *                           items:
+ *                             $ref: '#/components/schemas/ApiLog'
+ *       404:
+ *         description: Transaction not found in Supabase
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/transaction/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -364,6 +711,33 @@ app.get('/api/transaction/:id', async (req, res) => {
 });
 
 // GET /api/stats - Real-time metrics calculated strictly from Supabase
+/**
+ * @swagger
+ * /api/stats:
+ *   get:
+ *     tags: [Statistics]
+ *     summary: Get transaction statistics
+ *     description: Retrieve real-time summary statistics calculated from Supabase database
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 data:
+ *                   $ref: '#/components/schemas/StatsResponse'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/stats', async (req, res) => {
   try {
     const statsRes = await queryDb(`
@@ -388,6 +762,35 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // GET /api/logs - Live Integration Logs Stream from Supabase
+/**
+ * @swagger
+ * /api/logs:
+ *   get:
+ *     tags: [Logs]
+ *     summary: Get API logs
+ *     description: Retrieve the last 50 API request/response logs from Supabase transaction_logs table
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ApiLog'
+ *       500:
+ *         description: Supabase database error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.get('/api/logs', async (req, res) => {
   try {
     const { rows } = await queryDb(
