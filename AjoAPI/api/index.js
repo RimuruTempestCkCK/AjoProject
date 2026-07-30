@@ -1,10 +1,27 @@
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from '../swagger.js';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Swagger UI
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'AjoAPI Documentation',
+  swaggerOptions: {
+    persistAuthorization: true
+  }
+}));
+
+// Swagger JSON endpoint
+app.get('/api/docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // In-memory / Cloud Data Store
 const products = [
@@ -78,6 +95,21 @@ function addLog(trxId, logType, url, reqBody, statusCode, resBody, execTime) {
 }
 
 // Health Check
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     tags: [Health]
+ *     summary: Health check endpoint
+ *     description: Returns the health status of the AjoAPI service
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ */
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'UP',
@@ -88,16 +120,111 @@ app.get('/api/health', (req, res) => {
 });
 
 // GET /api/products
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get all available products
+ *     description: Returns a list of all products including pulsa, PLN tokens, and e-wallet top-ups
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Product'
+ */
 app.get('/api/products', (req, res) => {
   res.json({ statusCode: 200, message: 'Success', data: products });
 });
 
 // GET /api/providers
+/**
+ * @swagger
+ * /api/providers:
+ *   get:
+ *     tags: [Providers]
+ *     summary: Get all providers
+ *     description: Returns a list of all payment and top-up providers
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Provider'
+ */
 app.get('/api/providers', (req, res) => {
   res.json({ statusCode: 200, message: 'Success', data: providers });
 });
 
 // POST /api/provider/toggle
+/**
+ * @swagger
+ * /api/provider/toggle:
+ *   post:
+ *     tags: [Providers]
+ *     summary: Toggle provider status
+ *     description: Toggle a provider's status between ACTIVE and MAINTENANCE
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - providerCode
+ *             properties:
+ *               providerCode:
+ *                 type: string
+ *                 description: Provider code (e.g., TSEL, ISAT, XL)
+ *                 example: TSEL
+ *     responses:
+ *       200:
+ *         description: Provider status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Provider Telkomsel is now MAINTENANCE
+ *                 data:
+ *                   $ref: '#/components/schemas/Provider'
+ *       404:
+ *         description: Provider not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.post('/api/provider/toggle', (req, res) => {
   const { providerCode } = req.body || {};
   const prov = providers.find(p => p.code === providerCode);
@@ -109,6 +236,58 @@ app.post('/api/provider/toggle', (req, res) => {
 });
 
 // POST /api/transaction
+/**
+ * @swagger
+ * /api/transaction:
+ *   post:
+ *     tags: [Transactions]
+ *     summary: Create a new transaction
+ *     description: Process a new top-up or payment transaction. The system simulates provider response with 90% success rate.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - productCode
+ *               - destination
+ *             properties:
+ *               productCode:
+ *                 type: string
+ *                 description: Product code to purchase
+ *                 example: TSEL10
+ *               destination:
+ *                 type: string
+ *                 description: Destination phone number (must start with 0, 8-13 digits)
+ *                 example: '081234567890'
+ *               createdBy:
+ *                 type: string
+ *                 description: User who initiated the transaction
+ *                 example: operator1
+ *     responses:
+ *       200:
+ *         description: Transaction processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Transaction processed successfully
+ *                 data:
+ *                   $ref: '#/components/schemas/Transaction'
+ *       400:
+ *         description: Invalid request (missing fields or validation error)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/responses/Error'
+ */
 app.post('/api/transaction', async (req, res) => {
   const startTime = Date.now();
   const { productCode, destination, createdBy } = req.body || {};
@@ -167,6 +346,74 @@ app.post('/api/transaction', async (req, res) => {
 });
 
 // GET /api/transaction
+/**
+ * @swagger
+ * /api/transaction:
+ *   get:
+ *     tags: [Transactions]
+ *     summary: Get transactions list
+ *     description: Retrieve a paginated list of transactions with optional filters
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [SUCCESS, FAILED, PENDING]
+ *         description: Filter by transaction status
+ *       - in: query
+ *         name: productCode
+ *         schema:
+ *           type: string
+ *         description: Filter by product code
+ *       - in: query
+ *         name: pageNumber
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalRecords:
+ *                       type: integer
+ *                       example: 100
+ *                     pageNumber:
+ *                       type: integer
+ *                       example: 1
+ *                     pageSize:
+ *                       type: integer
+ *                       example: 10
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 10
+ *                     transactions:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Transaction'
+ */
 app.get('/api/transaction', (req, res) => {
   const { status, productCode, pageNumber = 1, pageSize = 10 } = req.query;
   let filtered = [...transactions];
@@ -191,6 +438,27 @@ app.get('/api/transaction', (req, res) => {
 });
 
 // GET /api/stats
+/**
+ * @swagger
+ * /api/stats:
+ *   get:
+ *     tags: [Statistics]
+ *     summary: Get transaction statistics
+ *     description: Retrieve summary statistics including transaction counts, success rate, and total volume
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 data:
+ *                   $ref: '#/components/schemas/StatsResponse'
+ */
 app.get('/api/stats', (req, res) => {
   const totalTrx = transactions.length;
   const successTrx = transactions.filter(t => t.status === 'SUCCESS').length;
@@ -211,6 +479,29 @@ app.get('/api/stats', (req, res) => {
 });
 
 // GET /api/logs
+/**
+ * @swagger
+ * /api/logs:
+ *   get:
+ *     tags: [Logs]
+ *     summary: Get API logs
+ *     description: Retrieve the last 50 API request/response logs
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ApiLog'
+ */
 app.get('/api/logs', (req, res) => {
   res.json({ statusCode: 200, data: apiLogs.slice(0, 50) });
 });
