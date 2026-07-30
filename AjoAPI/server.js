@@ -19,9 +19,8 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'dist')));
 
-// Swagger UI
+// Swagger UI - Must be before static files and SPA fallback
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'AjoAPI Documentation',
@@ -35,6 +34,9 @@ app.get('/api/docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
+
+// Static files after Swagger UI
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // ------------------------------------------------------------------------------------
 // DATABASE CONNECTION (STRICT SUPABASE POSTGRESQL)
@@ -813,15 +815,17 @@ app.get('/api/logs', async (req, res) => {
   }
 });
 
-// Fallback SPA Router
+// Fallback SPA Router - Must be after all API routes
 app.use((req, res, next) => {
-  // Allow Swagger UI routes to pass through
+  // Skip Swagger UI routes
   if (req.path.startsWith('/api/docs') || req.path === '/api/docs.json') {
     return next();
   }
+  // Return 404 for other /api/ routes
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ statusCode: 404, message: 'Endpoint not found' });
   }
+  // Serve React app for all other routes
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
