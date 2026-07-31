@@ -35,42 +35,14 @@ app.get('/api/docs.json', (req, res) => {
 });
 
 // Swagger UI - Serve the HTML page directly (handle both /api/docs and /api/docs/)
-const swaggerHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>AjoAPI Documentation</title>
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css">
-  <style>
-    .swagger-ui .topbar { display: none; }
-  </style>
-</head>
-<body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-  <script>
-    SwaggerUIBundle({
-      url: '/api/docs.json',
-      dom_id: '#swagger-ui',
-      deepLinking: true,
-      presets: [
-        SwaggerUIBundle.presets.apis,
-        SwaggerUIBundle.SwaggerUIStandalonePreset
-      ],
-      layout: "BaseLayout"
-    });
-  </script>
-</body>
-</html>`;
-
 app.get('/api/docs', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.send(swaggerHtml);
+  console.log('✅ /api/docs route HIT');
+  res.send('<h1>Swagger Route Works!</h1>');
 });
 
 app.get('/api/docs/', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.send(swaggerHtml);
+  console.log('✅ /api/docs/ route HIT');
+  res.send('<h1>Swagger Route Works!</h1>');
 });
 
 // Static files
