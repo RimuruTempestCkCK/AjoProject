@@ -20,15 +20,22 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Debug logging middleware - remove in production
+app.use((req, res, next) => {
+  if (req.path.includes('/api/docs')) {
+    console.log('🔍 Request to:', req.path, 'Method:', req.method);
+  }
+  next();
+});
+
 // OpenAPI JSON endpoint
 app.get('/api/docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 
-// Swagger UI - Serve the HTML page directly
-app.get('/api/docs', (req, res) => {
-  const swaggerHtml = `<!DOCTYPE html>
+// Swagger UI - Serve the HTML page directly (handle both /api/docs and /api/docs/)
+const swaggerHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -56,6 +63,12 @@ app.get('/api/docs', (req, res) => {
 </body>
 </html>`;
 
+app.get('/api/docs', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(swaggerHtml);
+});
+
+app.get('/api/docs/', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(swaggerHtml);
 });
@@ -458,11 +471,10 @@ app.get('/api/logs', async (req, res) => {
 app.use((req, res, next) => {
   // Skip Swagger UI and JSON routes - they should have been handled already
   if (req.path.startsWith('/api/docs') || req.path === '/api/docs.json') {
-    // If we reach here, it means Swagger UI middleware didn't handle it
-    // Return a helpful error instead of 404
+    // If we reach here, it means Swagger UI routes didn't handle it
     return res.status(500).json({
       statusCode: 500,
-      message: 'Swagger UI middleware not configured properly. Check server.js middleware order.'
+      message: 'Swagger UI routes not configured. Check server.js route definitions.'
     });
   }
   // Return 404 for other /api/ routes
