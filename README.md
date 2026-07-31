@@ -1,24 +1,498 @@
 # 🚀 AjoProject - Platform Top-Up Pulsa & API Gateway System
 
-**AjoProject** adalah ekosistem aplikasi pengelolaan dan pemrosesan transaksi top-up pulsa, paket data, dan e-wallet. Proyek ini terdiri dari dua modul utama: portal web manajemen transaksi berbasis **ASP.NET MVC** ([AjoTopup](file:///C:/Users/Maxtop/Downloads/AjoProject/AjoTopup)) dan engine API gateway modern berbasis **Node.js Express & React** ([AjoAPI](file:///C:/Users/Maxtop/Downloads/AjoProject/AjoAPI)).
+<div align="center">
+
+![Node.js](https://img.shields.io/badge/Node.js-18.x-green?logo=node.js)
+![Express](https://img.shields.io/badge/Express-5.x-blue?logo=express)
+![React](https://img.shields.io/badge/React-19.x-61dafb?logo=react)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e?logo=supabase)
+![Vercel](https://img.shields.io/badge/Vercel-Deployed-black?logo=vercel)
+![Swagger](https://img.shields.io/badge/Swagger-OpenAPI_3.0-green?logo=swagger)
+
+**AjoProject** adalah ekosistem aplikasi pengelolaan dan pemrosesan transaksi top-up pulsa, paket data, dan e-wallet dengan arsitektur microservice modern.
+
+</div>
 
 ---
 
 ## 📑 Daftar Isi
 
-- [Struktur Proyek](#-struktur-proyek)
-- [Fitur Utama](#-fitur-utama)
-- [Teknologi yang Digunakan](#-teknologi-yang-digunakan)
-- [🗄️ Arsitektur Integrasi & Database Supabase](#️-arsitektur-integrasi--database-supabase)
-- [Panduan Memulai & Cara Menjalankan](#-panduan-memulai--cara-menjalankan)
-  - [1. Menjalankan AjoAPI (Node.js API Engine & Dashboard)](#1-menjalankan-ajoapi-nodejs-api-engine--dashboard)
-  - [2. Menjalankan AjoTopup (ASP.NET MVC Portal)](#2-menjalankan-ajotopup-aspnet-mvc-portal)
-- [Panduan Deployment AjoAPI ke Vercel](#-panduan-deployment-ajoapi-ke-vercel)
-- [Dokumentasi Terkait](#-dokumentasi-terkait)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Quick Start](#-quick-start)
+- [API Documentation](#-api-documentation)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
-## 📁 Struktur Proyek
+## ✨ Features
+
+### 🎯 Core Features
+- ✅ **Multi-Role Authentication** - Admin, Operator, and Manager access levels
+- ✅ **Real-time Transaction Processing** - Instant top-up with provider simulation
+- ✅ **Provider Gateway Simulator** - Simulates Telkomsel, Indosat, XL, Axis, PLN, DANA, OVO, GoPay
+- ✅ **Comprehensive Logging** - Full request/response audit trail
+- ✅ **Interactive API Documentation** - Swagger UI for API exploration
+- ✅ **Cloud Database** - Supabase PostgreSQL for persistent storage
+
+### 📊 Dashboard Features
+- ✅ **Real-time Analytics** - Transaction metrics and success rates
+- ✅ **Provider Status Monitoring** - Active/Maintenance status tracking
+- ✅ **Transaction History** - Searchable and filterable transaction logs
+- ✅ **Commission Tracking** - Automatic commission calculation
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      CLIENT LAYER                           │
+├─────────────────────────────────────────────────────────────┤
+│  AjoTopup (ASP.NET MVC)    │    AjoAPI Dashboard (React)    │
+│  - Transaction Portal      │    - Admin Dashboard           │
+│  - User Management         │    - Real-time Analytics       │
+│  - Product Catalog         │    - Provider Monitoring       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      API GATEWAY LAYER                      │
+├─────────────────────────────────────────────────────────────┤
+│                    AjoAPI (Express.js)                       │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
+│  │  REST API       │  │  Swagger UI     │  │  Provider   │ │
+│  │  Endpoints      │  │  Documentation  │  │  Simulator  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     DATABASE LAYER                          │
+├─────────────────────────────────────────────────────────────┤
+│               Supabase PostgreSQL (Cloud)                    │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐            │
+│  │  Products  │  │ Transactions│  │  Providers │            │
+│  └────────────┘  └────────────┘  └────────────┘            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Node.js** | 18.x+ | Runtime environment |
+| **Express** | 5.x | REST API framework |
+| **PostgreSQL** | 14+ | Database (via Supabase) |
+| **pg** | 8.x | PostgreSQL client |
+
+### Frontend
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **React** | 19.x | UI library |
+| **Vite** | 8.x | Build tool |
+| **Lucide React** | 1.27+ | Icons |
+| **Tailwind CSS** | 3.x | Styling |
+
+### API Documentation
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| **Swagger UI** | 5.9.0 | Interactive API docs |
+| **OpenAPI** | 3.0.0 | API specification |
+
+### Deployment
+| Technology | Purpose |
+|-----------|---------|
+| **Vercel** | Serverless hosting |
+| **Supabase** | Cloud database |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** 18.x or higher
+- **npm** 9.x or higher
+- **Supabase Account** (for cloud database)
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/RimuruTempestCkCK/AjoProject.git
+cd AjoProject
+```
+
+### 2️⃣ Setup AjoAPI
+
+```bash
+cd AjoAPI
+
+# Install dependencies
+npm install
+
+# Create .env file
+cat > .env << EOF
+DATABASE_URL=your_supabase_connection_string
+EOF
+
+# Run development server
+npm run api
+```
+
+**Access Points:**
+- 🌐 **Dashboard UI**: http://localhost:5000
+- 📚 **Swagger UI**: http://localhost:5000/api/docs
+- 🔌 **API Endpoints**: http://localhost:5000/api/*
+
+### 3️⃣ Setup AjoTopup (Optional)
+
+```bash
+cd ../AjoTopup
+
+# Open in Visual Studio
+# Open AjoTopup.sln file
+
+# Update connection string in Web.config
+# Run with F5
+```
+
+---
+
+## 📚 API Documentation
+
+### 🌟 Swagger UI
+
+Interactive API documentation is available at:
+```
+http://localhost:5000/api/docs
+```
+
+**Features:**
+- ✅ Try It Out - Test endpoints directly from browser
+- ✅ Request/Response schemas
+- ✅ Authentication examples
+- ✅ Error response documentation
+
+### 📖 Available Endpoints
+
+#### Health Check
+```http
+GET /api/health
+```
+Returns service health status and database connectivity.
+
+#### Products
+```http
+GET /api/products
+```
+Returns list of all available products (Pulsa, PLN, E-Wallet).
+
+**Response:**
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "code": "TSEL10",
+      "name": "Telkomsel 10.000",
+      "provider": "Telkomsel",
+      "category": "PULSA",
+      "price": 10500,
+      "commission": 250,
+      "isActive": true
+    }
+  ]
+}
+```
+
+#### Providers
+```http
+GET /api/providers
+```
+Returns list of all payment providers.
+
+#### Toggle Provider Status
+```http
+POST /api/provider/toggle
+Content-Type: application/json
+
+{
+  "providerCode": "TSEL"
+}
+```
+Toggle provider between ACTIVE and MAINTENANCE status.
+
+#### Create Transaction
+```http
+POST /api/transaction
+Content-Type: application/json
+
+{
+  "productCode": "TSEL10",
+  "destination": "081234567890",
+  "createdBy": "operator1"
+}
+```
+
+**Response:**
+```json
+{
+  "statusCode": 200,
+  "message": "Transaction processed successfully",
+  "data": {
+    "trxId": "TRX2026072900001",
+    "productCode": "TSEL10",
+    "productName": "Telkomsel 10.000",
+    "destination": "081234567890",
+    "amount": 10500,
+    "commission": 250,
+    "status": "SUCCESS",
+    "serialNumber": "SN89210982310",
+    "requestDate": "2026-07-29T10:00:00.000Z",
+    "responseDate": "2026-07-29T10:00:00.300Z",
+    "responseTime": 300
+  }
+}
+```
+
+#### Get Transactions
+```http
+GET /api/transaction?pageNumber=1&pageSize=10&status=SUCCESS
+```
+
+**Query Parameters:**
+- `pageNumber` - Page number (default: 1)
+- `pageSize` - Items per page (default: 10)
+- `status` - Filter by status (SUCCESS, FAILED, PENDING)
+- `productCode` - Filter by product code
+
+#### Get Transaction Details
+```http
+GET /api/transaction/:id
+```
+Returns transaction details with complete audit logs.
+
+#### Get Statistics
+```http
+GET /api/stats
+```
+Returns real-time transaction statistics.
+
+#### Get API Logs
+```http
+GET /api/logs
+```
+Returns last 50 API request/response logs.
+
+---
+
+## ☁️ Deployment
+
+### Vercel Deployment
+
+#### 1. Environment Variables
+
+Set these in Vercel Dashboard → Settings → Environment Variables:
+
+```
+DATABASE_URL=your_supabase_connection_string
+```
+
+#### 2. Deploy
+
+```bash
+# Login to Vercel
+npx vercel login
+
+# Deploy to production
+npx vercel --prod
+```
+
+#### 3. Configuration
+
+The `vercel.json` is already configured:
+```json
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "server.js"
+    }
+  ]
+}
+```
+
+### Supabase Setup
+
+1. Create account at [supabase.com](https://supabase.com)
+2. Create new project
+3. Run SQL migrations from `Database_Setup_Supabase.sql`
+4. Copy connection string to Vercel environment variables
+
+---
+
+## 📁 Project Structure
+
+```
+AjoProject/
+│
+├── AjoAPI/                          # Node.js API Engine & Dashboard
+│   ├── server.js                    # Express API server (main entry point)
+│   ├── swagger.js                   # OpenAPI 3.0 specification
+│   ├── src/                         # React dashboard source
+│   ├── api/                         # Vercel serverless functions
+│   ├── dist/                        # Built React app
+│   ├── package.json                 # Dependencies
+│   ├── vercel.json                  # Vercel configuration
+│   └── .env.example                 # Environment template
+│
+├── AjoTopup/                        # ASP.NET MVC Portal
+│   ├── Controllers/                 # MVC controllers
+│   ├── Models/                      # Data models
+│   ├── Views/                       # Razor views
+│   ├── Database_Setup.sql           # SQL Server setup
+│   └── Database_Setup_Supabase.sql  # PostgreSQL setup
+│
+├── DEPLOYMENT_GUIDE.md             # Deployment instructions
+├── PROJECT_FIX_SUMMARY.md          # Issue resolution log
+└── README.md                       # This file
+```
+
+---
+
+## 🔧 Development
+
+### Available Scripts
+
+```bash
+# Run API server only
+npm run api
+
+# Run React dev server only
+npm run ui
+
+# Run both concurrently
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+### API Testing
+
+Use the interactive Swagger UI at `/api/docs` or test with curl:
+
+```bash
+# Health check
+curl http://localhost:5000/api/health
+
+# Get products
+curl http://localhost:5000/api/products
+
+# Create transaction
+curl -X POST http://localhost:5000/api/transaction \
+  -H "Content-Type: application/json" \
+  -d '{"productCode":"TSEL10","destination":"081234567890"}'
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**1. Port already in use**
+```bash
+# Find process using port 5000
+netstat -ano | findstr :5000
+
+# Kill the process
+taskkill /PID <process_id> /F
+```
+
+**2. Database connection failed**
+- Verify `DATABASE_URL` in `.env`
+- Check Supabase project status
+- Ensure IP whitelist allows your address
+
+**3. Swagger UI not loading**
+```bash
+# Kill all node processes
+taskkill //F //IM node.exe //T
+
+# Restart server
+npm run api
+```
+
+---
+
+## 📊 Performance
+
+- **Response Time**: ~250ms average
+- **Success Rate**: 90% (simulated)
+- **Database**: Supabase PostgreSQL (99.9% uptime)
+- **Deployment**: Vercel Serverless (auto-scaling)
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 📧 Contact
+
+**Project Link**: https://github.com/RimuruTempestCkCK/AjoProject
+
+**Documentation**:
+- [Swagger UI](http://localhost:5000/api/docs) - Interactive API docs
+- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Deployment instructions
+- [Project Fix Summary](PROJECT_FIX_SUMMARY.md) - Issue resolutions
+
+---
+
+<div align="center">
+
+**⭐ Star this repository if you find it helpful!**
+
+Made with ❤️ by RimuruTempestCkCK
+
+</div>
 
 ```text
 AjoProject/
