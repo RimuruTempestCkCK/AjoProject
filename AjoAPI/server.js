@@ -17,16 +17,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(bodyParser.json());
-
-// Debug logging middleware - remove in production
+// Log ALL requests immediately when they arrive
 app.use((req, res, next) => {
-  if (req.path.includes('/api/docs')) {
-    console.log('🔍 Request to:', req.path, 'Method:', req.method);
-  }
+  console.log(`📥 ${req.method} ${req.url}`);
   next();
 });
+
+app.use(cors());
+app.use(bodyParser.json());
 
 // OpenAPI JSON endpoint
 app.get('/api/docs.json', (req, res) => {
