@@ -20,22 +20,47 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Swagger UI - Must be before static files and SPA fallback
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'AjoAPI Documentation',
-  swaggerOptions: {
-    persistAuthorization: true
-  }
-}));
-
 // OpenAPI JSON endpoint
 app.get('/api/docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 
-// Static files after Swagger UI
+// Swagger UI - Serve the HTML page directly
+app.get('/api/docs', (req, res) => {
+  const swaggerHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AjoAPI Documentation</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css">
+  <style>
+    .swagger-ui .topbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: '/api/docs.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.SwaggerUIStandalonePreset
+      ],
+      layout: "BaseLayout"
+    });
+  </script>
+</body>
+</html>`;
+
+  res.setHeader('Content-Type', 'text/html');
+  res.send(swaggerHtml);
+});
+
+// Static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // ------------------------------------------------------------------------------------
@@ -431,9 +456,14 @@ app.get('/api/logs', async (req, res) => {
 
 // Fallback SPA Router - Must be after all API routes
 app.use((req, res, next) => {
-  // Skip Swagger UI routes
+  // Skip Swagger UI and JSON routes - they should have been handled already
   if (req.path.startsWith('/api/docs') || req.path === '/api/docs.json') {
-    return next();
+    // If we reach here, it means Swagger UI middleware didn't handle it
+    // Return a helpful error instead of 404
+    return res.status(500).json({
+      statusCode: 500,
+      message: 'Swagger UI middleware not configured properly. Check server.js middleware order.'
+    });
   }
   // Return 404 for other /api/ routes
   if (req.path.startsWith('/api/')) {
